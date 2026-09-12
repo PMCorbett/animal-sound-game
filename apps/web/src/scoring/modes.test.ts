@@ -13,7 +13,7 @@ describe("applyModeMultiplier", () => {
   it("applies grown-up floor", () => {
     vi.spyOn(Math, "random").mockReturnValue(0);
     const score = applyModeMultiplier(10, "grownup");
-    expect(score).toBeGreaterThanOrEqual(35);
+    expect(score).toBeGreaterThanOrEqual(25);
     vi.restoreAllMocks();
   });
 });

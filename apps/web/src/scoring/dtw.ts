@@ -25,7 +25,8 @@ export function dtwDistance(a: number[], b: number[]): number {
   return Math.min(1, normalized);
 }
 
+/** Steeper than linear — mediocre shape matches score much lower. */
 export function dtwSimilarity(a: number[], b: number[]): number {
   const distance = dtwDistance(a, b);
-  return Math.max(0, 1 - distance);
+  return Math.exp(-4 * distance);
 }

@@ -8,6 +8,10 @@
     "dev": "npm run dev -w @animal-sound-game/web",
     "build": "npm run build -w @animal-sound-game/web",
     "lint": "npm run lint -w @animal-sound-game/web",
-    "test": "npm run test -w @animal-sound-game/web"
+    "test": "npm run test -w @animal-sound-game/web",
+    "generate-profiles": "tsx scripts/generate-profiles.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.4"
   }
 }

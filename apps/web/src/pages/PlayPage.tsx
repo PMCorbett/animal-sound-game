@@ -76,6 +76,7 @@ export function PlayPage() {
       {
         duration: profile.duration.ideal,
         pitchContour: profile.pitch.contour,
+        pitchHz: { min: profile.pitch.minHz, max: profile.pitch.maxHz },
         envelope: profile.envelope,
         mfcc: profile.mfcc,
       },

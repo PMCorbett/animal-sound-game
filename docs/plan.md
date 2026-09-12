@@ -154,10 +154,10 @@ Use the **Web Audio API** + a small feature library ([meyda](https://meyda.js.or
 
 ```
 rawScore = weighted average of:
-  - durationSimilarity     (weight ~15%)
-  - pitchRangeOverlap      (weight ~25%)
-  - envelopeCorrelation    (weight ~25%)
-  - mfccCosineSimilarity   (weight ~35%)
+  - durationSimilarity     (weight ~5%)
+  - pitchRangeOverlap      (weight ~35%)
+  - envelopeCorrelation    (weight ~28%)
+  - mfccCosineSimilarity   (weight ~32%)
 
 finalScore = applyModeMultiplier(rawScore, playerMode)
 ```

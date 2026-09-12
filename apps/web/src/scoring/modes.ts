@@ -1,11 +1,11 @@
 import type { PlayerMode } from "../types";
 
-const CHILD_FLOOR = 50;
-const GROWNUP_FLOOR = 35;
-const CHILD_MULTIPLIER = 1.25;
-const CHILD_BONUS = 10;
-const CHILD_JITTER = 8;
-const GROWNUP_JITTER = 5;
+const CHILD_FLOOR = 42;
+const GROWNUP_FLOOR = 25;
+const CHILD_MULTIPLIER = 1.12;
+const CHILD_BONUS = 5;
+const CHILD_JITTER = 4;
+const GROWNUP_JITTER = 2;
 
 export function applyModeMultiplier(rawScore: number, mode: PlayerMode): number {
   const jitterRange = mode === "child" ? CHILD_JITTER : GROWNUP_JITTER;

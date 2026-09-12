@@ -44,7 +44,7 @@ animal-sound-game/
 3. Compare against the animal's scoring profile using DTW and weighted similarity.
 4. Apply **Kid** or **Grown-up** mode multipliers (generous vs strict).
 
-Profiles live in `assets/profiles/` and are tuned for human imitations — comparing a kid saying "moo" to a real cow recording would score unfairly low.
+Profiles live in `assets/profiles/` and are generated from the reference sounds in `assets/sounds/`. Re-run `npm run generate-profiles` after swapping sound files to refresh duration, pitch, envelope, and MFCC targets.
 
 ## Player modes
 
@@ -74,8 +74,8 @@ Re-run the scoring formula in Lambda on submit. POST a compact feature vector (~
 - Custom domain on CloudFront
 - WAF / API Gateway rate-limiting hardening
 - AI "funny comment" bonus round (not for core scoring)
-- Replace synthesized reference sounds with royalty-free MP3s (CC0 from Freesound.org)
-- Profile calibration script that generates JSON from recorded gold-standard imitations
+- Host reference sounds on S3/CloudFront in production (`assets/sounds/*.mp3` — mono, 44.1 kHz, 96 kbps)
+- Re-calibrate profiles from human imitation recordings (instead of reference animal sounds)
 
 ## License
 

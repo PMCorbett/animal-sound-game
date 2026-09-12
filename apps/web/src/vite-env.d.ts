@@ -5,3 +5,8 @@ declare module "@assets/profiles/*.json" {
   const profile: ScoringProfile;
   export default profile;
 }
+
+declare module "@assets/sounds/*" {
+  const url: string;
+  export default url;
+}

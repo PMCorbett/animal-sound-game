@@ -21,6 +21,7 @@ export interface ScoringProfile {
 export interface AudioFeatures {
   duration: number;
   pitchContour: number[];
+  pitchHz: { min: number; max: number };
   envelope: number[];
   mfcc: number[];
 }

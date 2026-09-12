@@ -6,6 +6,7 @@ const HOP_SIZE = 1024;
 const MIN_PITCH_HZ = 60;
 const MAX_PITCH_HZ = 800;
 const NOISE_FLOOR = 0.01;
+const CONTOUR_POINTS = 20;
 
 function downsample(values: number[], targetLength: number): number[] {
   if (values.length === 0) return [];
@@ -31,13 +32,40 @@ function normalizeSequence(values: number[]): number[] {
   return values.map((v) => (v - min) / range);
 }
 
-export function extractFeatures(
-  audioBuffer: AudioBuffer,
-): import("../types").AudioFeatures {
-  const channel = audioBuffer.getChannelData(0);
-  const sampleRate = audioBuffer.sampleRate;
-  const duration = audioBuffer.duration;
+/** Length of audible content — ignores trailing silence in fixed-length recordings. */
+export function activeDurationFromRms(
+  rmsFrames: number[],
+  sampleRate: number,
+): number {
+  let firstActive = -1;
+  let lastActive = -1;
 
+  for (let i = 0; i < rmsFrames.length; i++) {
+    if (rmsFrames[i] >= NOISE_FLOOR) {
+      if (firstActive === -1) firstActive = i;
+      lastActive = i;
+    }
+  }
+
+  if (firstActive === -1) return 0;
+
+  const frameSeconds = HOP_SIZE / sampleRate;
+  const windowSeconds = FRAME_SIZE / sampleRate;
+  return (lastActive - firstActive) * frameSeconds + windowSeconds;
+}
+
+export interface ChannelFeatures {
+  duration: number;
+  pitchContour: number[];
+  envelope: number[];
+  mfcc: number[];
+  pitchHz: { min: number; max: number };
+}
+
+export function extractFeaturesFromChannel(
+  channel: Float32Array,
+  sampleRate: number,
+): ChannelFeatures {
   const pitchFrames: number[] = [];
   const rmsFrames: number[] = [];
   const mfccSums: number[] = [];
@@ -73,14 +101,76 @@ export function extractFeatures(
     }
   }
 
-  const pitchContour = normalizeSequence(
-    downsample(pitchFrames.length > 0 ? pitchFrames : [150, 140, 130], 20),
-  );
-  const envelope = normalizeSequence(downsample(rmsFrames, 20));
+  const duration = activeDurationFromRms(rmsFrames, sampleRate);
+  const pitchContour = pitchContourFromFrames(pitchFrames);
+  const envelope = normalizeSequence(downsample(rmsFrames, CONTOUR_POINTS));
   const mfcc =
     mfccCount > 0
       ? mfccSums.map((v) => v / mfccCount)
       : new Array(13).fill(0);
 
-  return { duration, pitchContour, envelope, mfcc };
+  const pitchHz = pitchRangeFromFrames(pitchFrames);
+
+  return {
+    duration,
+    pitchContour,
+    envelope,
+    mfcc,
+    pitchHz,
+  };
+}
+
+function hzToNormalizedPitch(hz: number): number {
+  return Math.max(
+    0,
+    Math.min(1, (hz - MIN_PITCH_HZ) / (MAX_PITCH_HZ - MIN_PITCH_HZ)),
+  );
+}
+
+/** Map to absolute Hz scale so low moo vs high squeak produce different contours. */
+function pitchContourFromFrames(pitchFrames: number[]): number[] {
+  const values =
+    pitchFrames.length > 0
+      ? pitchFrames.map(hzToNormalizedPitch)
+      : new Array(CONTOUR_POINTS).fill(0.5);
+  return downsample(values, CONTOUR_POINTS);
+}
+
+function pitchRangeFromFrames(pitchFrames: number[]): { min: number; max: number } {
+  if (pitchFrames.length === 0) {
+    return { min: 120, max: 400 };
+  }
+
+  const sorted = [...pitchFrames].sort((a, b) => a - b);
+  const percentile = (p: number) => {
+    const index = (sorted.length - 1) * p;
+    const lo = Math.floor(index);
+    const hi = Math.ceil(index);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (index - lo);
+  };
+
+  const pitchMin = percentile(0.1);
+  const pitchMax = percentile(0.9);
+
+  return {
+    min: Math.max(MIN_PITCH_HZ, Math.floor(pitchMin * 0.9)),
+    max: Math.min(MAX_PITCH_HZ, Math.ceil(pitchMax * 1.1)),
+  };
+}
+
+export function extractFeatures(
+  audioBuffer: AudioBuffer,
+): import("../types").AudioFeatures {
+  const features = extractFeaturesFromChannel(
+    audioBuffer.getChannelData(0),
+    audioBuffer.sampleRate,
+  );
+  return {
+    duration: features.duration,
+    pitchContour: features.pitchContour,
+    pitchHz: features.pitchHz,
+    envelope: features.envelope,
+    mfcc: features.mfcc,
+  };
 }
