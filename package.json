@@ -1,0 +1,13 @@
+{
+  "name": "animal-sound-game",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @animal-sound-game/web",
+    "build": "npm run build -w @animal-sound-game/web",
+    "lint": "npm run lint -w @animal-sound-game/web",
+    "test": "npm run test -w @animal-sound-game/web"
+  }
+}
