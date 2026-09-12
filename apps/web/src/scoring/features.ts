@@ -1,4 +1,5 @@
 import Meyda from "meyda";
+import { estimatePitchHz } from "./pitch";
 
 const FRAME_SIZE = 2048;
 const HOP_SIZE = 1024;
@@ -54,10 +55,7 @@ export function extractFeatures(
       continue;
     }
 
-    const pitch = (Meyda.extract as (feature: string, slice: Float32Array) => number)(
-      "yin",
-      slice,
-    );
+    const pitch = estimatePitchHz(slice, sampleRate);
     if (pitch && pitch >= MIN_PITCH_HZ && pitch <= MAX_PITCH_HZ) {
       pitchFrames.push(pitch);
     }
