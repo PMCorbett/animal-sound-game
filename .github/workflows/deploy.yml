@@ -64,6 +64,31 @@ jobs:
           echo "Ref: ${{ github.ref }}"
           echo "OIDC sub claim will be: repo:${{ github.repository }}:ref:${{ github.ref }}"
 
+      - name: Verify AWS deployment secrets
+        env:
+          AWS_ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          missing=()
+          [ -z "$AWS_ROLE_ARN" ] && missing+=("AWS_ROLE_ARN")
+          [ -z "$AWS_REGION" ] && missing+=("AWS_REGION")
+
+          if [ ${#missing[@]} -gt 0 ]; then
+            echo "::error::Missing GitHub Actions secrets: ${missing[*]}"
+            echo "Add them under Settings → Secrets and variables → Actions → Secrets (not Variables)."
+            echo "  AWS_ROLE_ARN — arn:aws:iam::963777545862:role/AnimalSoundGame-GitHubActionsDeploy"
+            echo "  AWS_REGION — eu-west-2"
+            exit 1
+          fi
+
+          if [[ ! "$AWS_ROLE_ARN" =~ ^arn:aws:iam::[0-9]{12}:role/.+ ]]; then
+            echo "::error::AWS_ROLE_ARN does not look like a valid IAM role ARN."
+            echo "Expected format: arn:aws:iam::<account-id>:role/<role-name>"
+            exit 1
+          fi
+
+          echo "AWS deployment secrets are configured."
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
