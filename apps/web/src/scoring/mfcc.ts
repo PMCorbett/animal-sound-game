@@ -1,7 +1,9 @@
 /** MFCC index 0 tracks energy; shape lives in coefficients 1–12. */
 const SHAPE_START_INDEX = 1;
-const COSINE_MATCH_FLOOR = 0.35;
-const SHAPE_EXPONENT = 1.6;
+const COSINE_MATCH_FLOOR = 0.15;
+const SHAPE_EXPONENT = 1.0;
+const SHAPE_BOOST = 0.16;
+const SHAPE_FLOOR = 0.28;
 
 function unitNormalize(values: number[]): number[] {
   const magnitude = Math.hypot(...values);
@@ -30,7 +32,7 @@ function coefficientAgreement(mfcc: number[], profileMfcc: number[]): number {
 
   let agreement = 0;
   for (let i = SHAPE_START_INDEX; i < len; i++) {
-    const tolerance = Math.max(Math.abs(profileMfcc[i]) * 0.45, 8);
+    const tolerance = Math.max(Math.abs(profileMfcc[i]) * 0.75, 12);
     const error = Math.abs(mfcc[i] - profileMfcc[i]);
     agreement += Math.max(0, 1 - error / tolerance);
   }
@@ -55,7 +57,8 @@ export function mfccShapeSimilarity(
     (cosine - COSINE_MATCH_FLOOR) / (1 - COSINE_MATCH_FLOOR),
   );
   const agreement = coefficientAgreement(mfcc, profileMfcc);
-  const blended = cosine * 0.25 + strictCosine * 0.45 + agreement * 0.3;
+  const blended = cosine * 0.15 + strictCosine * 0.3 + agreement * 0.55;
+  const adjusted = blended ** SHAPE_EXPONENT + SHAPE_BOOST;
 
-  return Math.min(1, blended ** SHAPE_EXPONENT);
+  return Math.min(1, Math.max(SHAPE_FLOOR, adjusted));
 }
