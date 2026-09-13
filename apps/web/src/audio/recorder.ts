@@ -30,6 +30,11 @@ export function hasMicrophoneAccess(): boolean {
   return mediaStream !== null;
 }
 
+/** Active mic stream for live visualisation during recording. */
+export function getMediaStream(): MediaStream | null {
+  return mediaStream;
+}
+
 export async function startRecording(
   onCountdownTick?: (secondsLeft: number) => void,
 ): Promise<RecordingResult> {

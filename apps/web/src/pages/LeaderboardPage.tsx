@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { isApiConfigured } from "../api/client";
 import { ANIMALS } from "../data/animals";
+import { HowItWorksPanel } from "../components/HowItWorksPanel";
 import { LeaderboardTable } from "../components/LeaderboardTable";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import type { AnimalId, PlayerMode } from "../types";
@@ -43,43 +44,49 @@ export function LeaderboardPage() {
         )}
       </header>
 
-      <div className="filter-tabs">
-        <div className="filter-group">
-          <span className="filter-label">Mode:</span>
-          {(["all", "child", "grownup"] as const).map((mode) => (
-            <button
-              key={mode}
-              type="button"
-              className={`filter-tab ${modeFilter === mode ? "active" : ""}`}
-              onClick={() => setModeFilter(mode)}
-            >
-              {mode === "all" ? "Everyone" : mode === "child" ? "Kids" : "Grown-ups"}
-            </button>
-          ))}
-        </div>
-        <div className="filter-group">
-          <span className="filter-label">Animal:</span>
-          <button
-            type="button"
-            className={`filter-tab ${animalFilter === "all" ? "active" : ""}`}
-            onClick={() => setAnimalFilter("all")}
-          >
-            All
-          </button>
-          {ANIMALS.map((animal) => (
-            <button
-              key={animal.id}
-              type="button"
-              className={`filter-tab ${animalFilter === animal.id ? "active" : ""}`}
-              onClick={() => setAnimalFilter(animal.id)}
-            >
-              {animal.emoji}
-            </button>
-          ))}
-        </div>
-      </div>
+      <div className="leaderboard-split">
+        <section className="leaderboard-panel" aria-label="Scores">
+          <div className="filter-tabs">
+            <div className="filter-group">
+              <span className="filter-label">Mode:</span>
+              {(["all", "child", "grownup"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  className={`filter-tab ${modeFilter === mode ? "active" : ""}`}
+                  onClick={() => setModeFilter(mode)}
+                >
+                  {mode === "all" ? "Everyone" : mode === "child" ? "Kids" : "Grown-ups"}
+                </button>
+              ))}
+            </div>
+            <div className="filter-group">
+              <span className="filter-label">Animal:</span>
+              <button
+                type="button"
+                className={`filter-tab ${animalFilter === "all" ? "active" : ""}`}
+                onClick={() => setAnimalFilter("all")}
+              >
+                All
+              </button>
+              {ANIMALS.map((animal) => (
+                <button
+                  key={animal.id}
+                  type="button"
+                  className={`filter-tab ${animalFilter === animal.id ? "active" : ""}`}
+                  onClick={() => setAnimalFilter(animal.id)}
+                >
+                  {animal.emoji}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      <LeaderboardTable entries={entries} />
+          <LeaderboardTable entries={entries} />
+        </section>
+
+        <HowItWorksPanel />
+      </div>
 
       <nav className="page-nav">
         <Link to="/">← Back to play</Link>

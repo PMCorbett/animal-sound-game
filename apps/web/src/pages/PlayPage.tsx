@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { playReferenceSound } from "../audio/player";
-import { startRecording } from "../audio/recorder";
+import {
+  hasMicrophoneAccess,
+  requestMicrophone,
+  startRecording,
+} from "../audio/recorder";
 import { AnimalPicker } from "../components/AnimalPicker";
+import { MicrophonePrimer } from "../components/MicrophonePrimer";
 import { ModePicker } from "../components/ModePicker";
+import { PrivacyNotice } from "../components/PrivacyNotice";
 import { ScoreDisplay } from "../components/ScoreDisplay";
+import { SoundWaveVisualizer } from "../components/SoundWaveVisualizer";
 import { getAnimal } from "../data/animals";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { extractFeatures } from "../scoring/features";
@@ -12,7 +19,13 @@ import { getProfile } from "../scoring/profiles";
 import { scoreRecording } from "../scoring/scorer";
 import type { AnimalId, PlayerMode, ScoreResult } from "../types";
 
-type GameStep = "setup" | "ready" | "countdown" | "recording" | "scored";
+type GameStep =
+  | "setup"
+  | "ready"
+  | "mic-primer"
+  | "countdown"
+  | "recording"
+  | "scored";
 
 export function PlayPage() {
   const { submitScore } = useLeaderboard();
@@ -26,6 +39,7 @@ export function PlayPage() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [micLoading, setMicLoading] = useState(false);
 
   const selectedAnimal = animal ? getAnimal(animal) : null;
 
@@ -43,9 +57,37 @@ export function PlayPage() {
     }
   }
 
+  function handleStartRecord() {
+    if (!animal) return;
+    setError(null);
+    if (!hasMicrophoneAccess()) {
+      setStep("mic-primer");
+      return;
+    }
+    void handleRecord();
+  }
+
+  async function handleEnableMicrophone() {
+    setMicLoading(true);
+    setError(null);
+    try {
+      await requestMicrophone();
+      setStep("ready");
+      void handleRecord();
+    } catch {
+      setError(
+        "Microphone access was denied. Check your browser settings and try again.",
+      );
+      setStep("ready");
+    } finally {
+      setMicLoading(false);
+    }
+  }
+
   async function handleRecord() {
     if (!animal) return;
     setError(null);
+    setCountdown(3);
     setStep("countdown");
 
     try {
@@ -129,7 +171,7 @@ export function PlayPage() {
           {animal && (
             <button
               type="button"
-              className="btn btn-primary"
+              className="btn btn-primary btn-bounce-in"
               onClick={handlePlayReference}
               disabled={isPlaying}
             >
@@ -141,7 +183,7 @@ export function PlayPage() {
 
       {step === "ready" && selectedAnimal && (
         <div className="ready-panel">
-          <p className="ready-animal">
+          <p className="ready-animal ready-animal-bounce">
             {selectedAnimal.emoji} {selectedAnimal.name}
           </p>
           <p>Get ready to imitate: <strong>{selectedAnimal.soundLabel}</strong></p>
@@ -154,7 +196,11 @@ export function PlayPage() {
             >
               Hear again
             </button>
-            <button type="button" className="btn btn-primary btn-record" onClick={handleRecord}>
+            <button
+              type="button"
+              className="btn btn-primary btn-record"
+              onClick={handleStartRecord}
+            >
               🎤 Record my sound
             </button>
           </div>
@@ -164,15 +210,20 @@ export function PlayPage() {
         </div>
       )}
 
+      {step === "mic-primer" && (
+        <MicrophonePrimer onEnable={handleEnableMicrophone} loading={micLoading} />
+      )}
+
       {step === "countdown" && countdown > 0 && (
         <div className="countdown-panel">
           <p>Quiet moment…</p>
-          <span className="countdown-number">{countdown}</span>
+          <span className="countdown-number countdown-pop">{countdown}</span>
         </div>
       )}
 
-      {step === "recording" && (
+      {(step === "recording" || (step === "countdown" && countdown === 0)) && (
         <div className="recording-panel">
+          <SoundWaveVisualizer active={step === "recording"} />
           <span className="recording-pulse">🎤</span>
           <p>Recording… make your best {selectedAnimal?.soundLabel}</p>
         </div>
@@ -183,14 +234,20 @@ export function PlayPage() {
           <ScoreDisplay result={result} practiceMode={practiceMode} />
           {!practiceMode && !submitted && (
             <div className="submit-form">
+              <label className="nickname-label" htmlFor="nickname">
+                Choose a fun nickname
+              </label>
               <input
+                id="nickname"
                 type="text"
-                placeholder="Your nickname (max 20 chars)"
+                placeholder="e.g. SuperMoo42"
                 maxLength={20}
                 value={nickname}
                 onChange={(e) => setNickname(e.target.value)}
                 className="nickname-input"
+                autoComplete="off"
               />
+              <PrivacyNotice compact />
               <button
                 type="button"
                 className="btn btn-primary"

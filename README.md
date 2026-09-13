@@ -62,6 +62,8 @@ Profiles live in `assets/profiles/` and are generated from the reference sounds 
 
 Full architecture and implementation plan: [docs/plan.md](docs/plan.md).
 
+**Careers day:** demo script, QR code, and device testing checklist — [docs/careers-day.md](docs/careers-day.md).
+
 ## Architecture
 
 ```mermaid

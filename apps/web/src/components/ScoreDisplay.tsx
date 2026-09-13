@@ -8,7 +8,7 @@ interface ScoreDisplayProps {
 export function ScoreDisplay({ result, practiceMode }: ScoreDisplayProps) {
   return (
     <div className="score-display">
-      <div className="score-circle">
+      <div className="score-circle score-circle-pop">
         <span className="score-value">{result.finalScore}</span>
         <span className="score-label">out of 100</span>
       </div>

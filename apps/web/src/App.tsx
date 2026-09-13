@@ -5,12 +5,13 @@ import { PlayPage } from "./pages/PlayPage";
 export function App() {
   return (
     <BrowserRouter>
-      <main className="app">
-        <Routes>
-          <Route path="/" element={<PlayPage />} />
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-        </Routes>
-      </main>
+      <Routes>
+        <Route path="/" element={<main className="app app-play"><PlayPage /></main>} />
+        <Route
+          path="/leaderboard"
+          element={<main className="app app-leaderboard"><LeaderboardPage /></main>}
+        />
+      </Routes>
     </BrowserRouter>
   );
 }
