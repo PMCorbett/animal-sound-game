@@ -116,6 +116,9 @@ jobs:
           aws-region: ${{ steps.aws-secrets.outputs.region }}
           audience: sts.amazonaws.com
 
+      - name: Build web app for CDK synth
+        run: npm run build -w @animal-sound-game/web
+
       - name: Bootstrap CDK
         run: npx cdk bootstrap aws://963777545862/${{ env.AWS_REGION }}
         working-directory: infra
