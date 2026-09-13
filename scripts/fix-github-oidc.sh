@@ -14,12 +14,12 @@ echo "Checking OIDC provider: ${PROVIDER_ARN}"
 aws iam get-open-id-connect-provider --open-id-connect-provider-arn "${PROVIDER_ARN}"
 
 echo ""
-echo "Updating thumbprints..."
+echo "Updating thumbprints (40-char SHA-1, per GitHub/AWS docs)..."
 aws iam update-open-id-connect-provider-thumbprint \
   --open-id-connect-provider-arn "${PROVIDER_ARN}" \
   --thumbprint-list \
-    6938fd4d98bab03fa0971441ef9f9264 \
-    1c58a3a8518e8759bf075b8ef8f54d62
+    6938fd4d98bab03faadb97b34396831e3780aea1 \
+    1c58a3a8518e8759bf075b76b750d4f2df264fcd
 
 echo ""
 echo "Ensuring audience client ID sts.amazonaws.com is registered..."
