@@ -1,13 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchLeaderboard,
   isApiConfigured,
   submitScoreToApi,
 } from "../api/client";
+import { connectLeaderboard, isWsConfigured } from "../api/ws";
 import type { AnimalId, LeaderboardEntry, PlayerMode } from "../types";
 
 const STORAGE_KEY = "animal-sound-game-leaderboard";
-const REFRESH_INTERVAL_MS = 30_000;
+const REFRESH_INTERVAL_MS = 60_000;
 
 function loadLocalEntries(): LeaderboardEntry[] {
   try {
@@ -22,12 +23,21 @@ function saveLocalEntries(entries: LeaderboardEntry[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 }
 
-export function useLeaderboard() {
+export interface UseLeaderboardOptions {
+  onRemoteScore?: (entry: LeaderboardEntry) => void;
+}
+
+export function useLeaderboard(options: UseLeaderboardOptions = {}) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>(() =>
     isApiConfigured() ? [] : loadLocalEntries(),
   );
   const [loading, setLoading] = useState(isApiConfigured());
   const [error, setError] = useState<string | null>(null);
+  const entriesRef = useRef(entries);
+  const onRemoteScoreRef = useRef(options.onRemoteScore);
+
+  entriesRef.current = entries;
+  onRemoteScoreRef.current = options.onRemoteScore;
 
   const refresh = useCallback(async () => {
     if (!isApiConfigured()) {
@@ -56,6 +66,30 @@ export function useLeaderboard() {
     }, REFRESH_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!isApiConfigured() || !isWsConfigured()) return;
+
+    const disconnect = connectLeaderboard({
+      onEvent: (event) => {
+        if (event.type !== "score_submitted") return;
+
+        if (entriesRef.current.some((entry) => entry.id === event.entry.id)) {
+          return;
+        }
+
+        setEntries((prev) =>
+          [...prev, event.entry].sort((a, b) => b.score - a.score),
+        );
+        onRemoteScoreRef.current?.(event.entry);
+      },
+      onReconnect: () => {
+        void refresh();
+      },
+    });
+
+    return disconnect;
   }, [refresh]);
 
   const submitScore = useCallback(

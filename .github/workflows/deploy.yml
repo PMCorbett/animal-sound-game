@@ -133,17 +133,22 @@ jobs:
         run: npm run deploy:api
         working-directory: infra
 
-      - name: Resolve API URL
+      - name: Resolve API URLs
         id: api
         run: |
           API_URL=$(aws cloudformation describe-stacks \
             --stack-name AnimalSoundGame-ApiStack \
             --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
             --output text)
+          WS_URL=$(aws cloudformation describe-stacks \
+            --stack-name AnimalSoundGame-ApiStack \
+            --query "Stacks[0].Outputs[?OutputKey=='WebSocketUrl'].OutputValue" \
+            --output text)
           echo "url=$API_URL" >> "$GITHUB_OUTPUT"
+          echo "ws_url=$WS_URL" >> "$GITHUB_OUTPUT"
 
       - name: Build web app with API URL
-        run: VITE_API_URL=${{ steps.api.outputs.url }} npm run build -w @animal-sound-game/web
+        run: VITE_API_URL=${{ steps.api.outputs.url }} VITE_WS_URL=${{ steps.api.outputs.ws_url }} npm run build -w @animal-sound-game/web
 
       - name: Deploy web and CI stacks
         run: npx cdk deploy AnimalSoundGame-WebStack AnimalSoundGame-CiStack --require-approval never

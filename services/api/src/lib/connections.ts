@@ -1,0 +1,3 @@
+export const CONNECTION_PARTITION_KEY = "CONNECTION";
+
+export const CONNECTION_TTL_SECONDS = 60 * 60;

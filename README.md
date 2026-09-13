@@ -15,10 +15,12 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173). Microphone access requires HTTPS in production; `localhost` works for development.
 
-Without `VITE_API_URL`, the leaderboard falls back to **local storage** on your device. Point the app at a deployed API to test cloud submissions:
+Without `VITE_API_URL`, the leaderboard falls back to **local storage** on your device. Point the app at a deployed API to test cloud submissions and live leaderboard updates:
 
 ```bash
-VITE_API_URL=https://your-api-id.execute-api.eu-west-2.amazonaws.com npm run dev
+VITE_API_URL=https://your-api-id.execute-api.eu-west-2.amazonaws.com \
+VITE_WS_URL=wss://your-ws-api-id.execute-api.eu-west-2.amazonaws.com/prod \
+npm run dev
 ```
 
 ### Other commands
@@ -142,7 +144,11 @@ export VITE_API_URL=$(aws cloudformation describe-stacks \
   --stack-name AnimalSoundGame-ApiStack \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
   --output text)
-VITE_API_URL=$VITE_API_URL npm run build -w @animal-sound-game/web
+export VITE_WS_URL=$(aws cloudformation describe-stacks \
+  --stack-name AnimalSoundGame-ApiStack \
+  --query "Stacks[0].Outputs[?OutputKey=='WebSocketUrl'].OutputValue" \
+  --output text)
+VITE_API_URL=$VITE_API_URL VITE_WS_URL=$VITE_WS_URL npm run build -w @animal-sound-game/web
 npx cdk deploy AnimalSoundGame-WebStack
 ```
 

@@ -20,6 +20,7 @@ import {
   rateSortKey,
   recordToEntry,
 } from "./scores.js";
+import { broadcastScoreSubmitted } from "./broadcast.js";
 import { ValidationError } from "./validation.js";
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
@@ -134,5 +135,13 @@ export async function submitScore(body: SubmitScoreBody): Promise<LeaderboardEnt
     }
   }
 
-  return recordToEntry(record);
+  const entry = recordToEntry(record);
+
+  try {
+    await broadcastScoreSubmitted(entry);
+  } catch (error) {
+    console.error("Leaderboard broadcast failed", error);
+  }
+
+  return entry;
 }

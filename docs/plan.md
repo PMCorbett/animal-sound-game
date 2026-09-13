@@ -195,7 +195,7 @@ The leaderboard is a **two-column layout** (stacks vertically on mobile):
 
 - Top scores table: rank, nickname, animal emoji, score, mode badge (Kid / Grown-up)
 - Filter tabs: Everyone | Kids | Grown-ups | per-animal
-- Auto-refresh every 30 seconds (or manual refresh button)
+- Live updates via WebSocket when a new score is submitted (toast + list merge); 60s poll fallback and manual refresh
 
 ### Right panel — "How it works" (careers-day content)
 

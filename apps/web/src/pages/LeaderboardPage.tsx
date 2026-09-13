@@ -1,18 +1,43 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { isApiConfigured } from "../api/client";
+import { isWsConfigured } from "../api/ws";
 import { ANIMALS } from "../data/animals";
 import { HowItWorksPanel } from "../components/HowItWorksPanel";
 import { LeaderboardTable } from "../components/LeaderboardTable";
+import { ScoreToastStack } from "../components/ScoreToastStack";
 import { useLeaderboard } from "../hooks/useLeaderboard";
-import type { AnimalId, PlayerMode } from "../types";
+import { useScoreToasts } from "../hooks/useScoreToasts";
+import type { AnimalId, LeaderboardEntry, PlayerMode } from "../types";
 
 type ModeFilter = PlayerMode | "all";
 
 export function LeaderboardPage() {
-  const { getFiltered, loading, error, refresh } = useLeaderboard();
   const [animalFilter, setAnimalFilter] = useState<AnimalId | "all">("all");
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
+  const { toasts, pushToast, dismissToast } = useScoreToasts();
+
+  const matchesFilters = useCallback(
+    (entry: LeaderboardEntry) => {
+      if (animalFilter !== "all" && entry.animal !== animalFilter) return false;
+      if (modeFilter !== "all" && entry.mode !== modeFilter) return false;
+      return true;
+    },
+    [animalFilter, modeFilter],
+  );
+
+  const onRemoteScore = useCallback(
+    (entry: LeaderboardEntry) => {
+      if (matchesFilters(entry)) {
+        pushToast(entry);
+      }
+    },
+    [matchesFilters, pushToast],
+  );
+
+  const { getFiltered, loading, error, refresh } = useLeaderboard({
+    onRemoteScore,
+  });
 
   const entries = useMemo(
     () =>
@@ -23,15 +48,19 @@ export function LeaderboardPage() {
     [getFiltered, animalFilter, modeFilter],
   );
 
+  const subtitle = isApiConfigured()
+    ? isWsConfigured()
+      ? "Top scores from everyone playing — updates live"
+      : "Top scores from everyone playing — set VITE_WS_URL for live updates"
+    : "Top scores on this device (local mode — set VITE_API_URL for cloud leaderboard)";
+
   return (
     <div className="leaderboard-page">
+      <ScoreToastStack toasts={toasts} onDismiss={dismissToast} />
+
       <header className="page-header">
         <h1>Leaderboard</h1>
-        <p>
-          {isApiConfigured()
-            ? "Top scores from everyone playing — refreshes every 30 seconds"
-            : "Top scores on this device (local mode — set VITE_API_URL for cloud leaderboard)"}
-        </p>
+        <p>{subtitle}</p>
         {isApiConfigured() && (
           <button type="button" className="btn btn-ghost" onClick={() => void refresh()}>
             {loading ? "Refreshing…" : "Refresh now"}
