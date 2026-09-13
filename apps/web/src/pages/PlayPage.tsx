@@ -1,17 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { playReferenceSound } from "../audio/player";
+import {
+  loadReferenceAudioBuffer,
+  playReferenceSound,
+  stopReferenceSound,
+} from "../audio/player";
 import {
   hasMicrophoneAccess,
   requestMicrophone,
   startRecording,
 } from "../audio/recorder";
+import { extractWaveformPeaks } from "../audio/waveform";
 import { AnimalPicker } from "../components/AnimalPicker";
 import { MicrophonePrimer } from "../components/MicrophonePrimer";
 import { ModePicker } from "../components/ModePicker";
 import { PrivacyNotice } from "../components/PrivacyNotice";
 import { ScoreDisplay } from "../components/ScoreDisplay";
 import { SoundWaveVisualizer } from "../components/SoundWaveVisualizer";
+import { WaveformCompare } from "../components/WaveformCompare";
+import { WaveformDisplay } from "../components/WaveformDisplay";
 import { getAnimal } from "../data/animals";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { extractFeatures } from "../scoring/features";
@@ -40,18 +47,56 @@ export function PlayPage() {
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [micLoading, setMicLoading] = useState(false);
+  const [referencePeaks, setReferencePeaks] = useState<number[]>([]);
+  const [recordingPeaks, setRecordingPeaks] = useState<number[]>([]);
+  const [playbackProgress, setPlaybackProgress] = useState<number | undefined>(
+    undefined,
+  );
 
   const selectedAnimal = animal ? getAnimal(animal) : null;
+
+  useEffect(() => {
+    if (!animal || step === "setup") {
+      setReferencePeaks([]);
+      setRecordingPeaks([]);
+      setPlaybackProgress(undefined);
+      return;
+    }
+
+    let cancelled = false;
+    void loadReferenceAudioBuffer(animal)
+      .then((buffer) => {
+        if (!cancelled) {
+          setReferencePeaks(extractWaveformPeaks(buffer));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setReferencePeaks([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [animal, step]);
+
+  function handleLetsPlay() {
+    if (!animal) return;
+    setError(null);
+    setStep("ready");
+  }
 
   async function handlePlayReference() {
     if (!animal) return;
     setIsPlaying(true);
     setError(null);
+    setPlaybackProgress(0);
     try {
-      await playReferenceSound(animal);
-      setStep("ready");
+      await playReferenceSound(animal, {
+        onProgress: setPlaybackProgress,
+      });
     } catch {
       setError("Could not play the reference sound. Try again.");
+      setPlaybackProgress(undefined);
     } finally {
       setIsPlaying(false);
     }
@@ -96,6 +141,7 @@ export function PlayPage() {
         setStep(secondsLeft > 0 ? "countdown" : "recording");
       });
 
+      setRecordingPeaks(extractWaveformPeaks(audioBuffer));
       setStep("recording");
       const features = extractFeatures(audioBuffer);
       const profile = getProfile(animal);
@@ -125,6 +171,7 @@ export function PlayPage() {
       profile,
       mode,
     );
+    setRecordingPeaks(profile.envelope);
     setResult(demoResult);
     setSubmitted(false);
     setStep("scored");
@@ -144,9 +191,19 @@ export function PlayPage() {
   }
 
   function handlePlayAgain() {
+    stopReferenceSound();
     setResult(null);
     setSubmitted(false);
-    setStep(animal ? "ready" : "setup");
+    setRecordingPeaks([]);
+    setPlaybackProgress(undefined);
+    setStep("ready");
+  }
+
+  function handleBackToSetup() {
+    stopReferenceSound();
+    setError(null);
+    setPlaybackProgress(undefined);
+    setStep("setup");
   }
 
   return (
@@ -168,16 +225,14 @@ export function PlayPage() {
             />
             Practice mode (score but don&apos;t save)
           </label>
-          {animal && (
-            <button
-              type="button"
-              className="btn btn-primary btn-bounce-in"
-              onClick={handlePlayReference}
-              disabled={isPlaying}
-            >
-              {isPlaying ? "Playing…" : `Hear the ${selectedAnimal?.name} sound`}
-            </button>
-          )}
+          <button
+            type="button"
+            className="btn btn-primary btn-lets-play"
+            onClick={handleLetsPlay}
+            disabled={!animal}
+          >
+            Let&apos;s play!
+          </button>
         </>
       )}
 
@@ -186,26 +241,35 @@ export function PlayPage() {
           <p className="ready-animal ready-animal-bounce">
             {selectedAnimal.emoji} {selectedAnimal.name}
           </p>
-          <p>Get ready to imitate: <strong>{selectedAnimal.soundLabel}</strong></p>
-          <div className="action-row">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={handlePlayReference}
-              disabled={isPlaying}
-            >
-              Hear again
-            </button>
-            <button
-              type="button"
-              className="btn btn-primary btn-record"
-              onClick={handleStartRecord}
-            >
-              🎤 Record my sound
-            </button>
-          </div>
+          <p>Imitate: <strong>{selectedAnimal.soundLabel}</strong></p>
+          <WaveformDisplay
+            peaks={referencePeaks}
+            label={`${selectedAnimal.name} sound`}
+            progress={isPlaying ? playbackProgress : undefined}
+            variant="reference"
+          />
+          <button
+            type="button"
+            className="btn btn-secondary btn-hear-sound"
+            onClick={handlePlayReference}
+            disabled={isPlaying}
+          >
+            {isPlaying
+              ? "Playing…"
+              : `🔊 Hear the ${selectedAnimal.name} sound`}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary btn-record"
+            onClick={handleStartRecord}
+          >
+            🎤 Record my sound
+          </button>
           <button type="button" className="btn btn-ghost" onClick={handleDemoScore}>
             Demo mode (no mic needed)
+          </button>
+          <button type="button" className="btn btn-ghost" onClick={handleBackToSetup}>
+            ← Choose a different animal
           </button>
         </div>
       )}
@@ -223,14 +287,26 @@ export function PlayPage() {
 
       {(step === "recording" || (step === "countdown" && countdown === 0)) && (
         <div className="recording-panel">
+          {referencePeaks.length > 0 && (
+            <WaveformDisplay
+              peaks={referencePeaks}
+              label={`${selectedAnimal?.name} sound`}
+              variant="reference"
+            />
+          )}
           <SoundWaveVisualizer active={step === "recording"} />
           <span className="recording-pulse">🎤</span>
           <p>Recording… make your best {selectedAnimal?.soundLabel}</p>
         </div>
       )}
 
-      {step === "scored" && result && (
+      {step === "scored" && result && selectedAnimal && (
         <div className="scored-panel">
+          <WaveformCompare
+            referencePeaks={referencePeaks}
+            recordingPeaks={recordingPeaks}
+            referenceLabel={`${selectedAnimal.name} sound`}
+          />
           <ScoreDisplay result={result} practiceMode={practiceMode} />
           {!practiceMode && !submitted && (
             <div className="submit-form">

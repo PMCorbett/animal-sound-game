@@ -216,6 +216,21 @@ h2 {
   padding: 1rem 1.5rem;
 }
 
+.btn-lets-play {
+  font-size: 1.35rem;
+  font-weight: 700;
+  padding: 1.1rem 1.5rem;
+  margin-top: 1.25rem;
+  animation: bounce-in 0.4s ease;
+}
+
+.btn-hear-sound {
+  width: 100%;
+  margin-top: 1.25rem;
+  font-size: 1.05rem;
+  padding: 0.9rem 1.25rem;
+}
+
 .practice-toggle {
   display: flex;
   align-items: center;
@@ -361,6 +376,55 @@ h2 {
 .score-breakdown ul {
   margin: 0.5rem 0 0;
   padding-left: 1.25rem;
+}
+
+/* Waveform display */
+.waveform-display {
+  margin: 0 auto 0.75rem;
+  max-width: 320px;
+  text-align: left;
+}
+
+.waveform-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.waveform-display canvas {
+  width: 100%;
+  height: 72px;
+  display: block;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.waveform-reference .waveform-label {
+  color: var(--primary-dark);
+}
+
+.waveform-recording .waveform-label {
+  color: #3d8b40;
+}
+
+.waveform-compare {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.waveform-compare-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  text-align: center;
+  color: var(--text-muted);
 }
 
 /* Sound wave visualizer */

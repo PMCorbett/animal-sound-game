@@ -14,21 +14,99 @@ const REFERENCE_SOUNDS: Record<AnimalId, string> = {
   duck: duckSound,
 };
 
-let currentAudio: HTMLAudioElement | null = null;
+let audioContext: AudioContext | null = null;
+let currentSource: AudioBufferSourceNode | null = null;
+let progressRaf = 0;
+const bufferCache = new Map<AnimalId, AudioBuffer>();
 
-export async function playReferenceSound(animalId: AnimalId): Promise<void> {
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio.currentTime = 0;
-    currentAudio = null;
+function getAudioContext(): AudioContext {
+  if (!audioContext) {
+    audioContext = new AudioContext();
+  }
+  return audioContext;
+}
+
+function stopCurrentPlayback(): void {
+  cancelAnimationFrame(progressRaf);
+  if (currentSource) {
+    try {
+      currentSource.stop();
+    } catch {
+      // Already stopped.
+    }
+    currentSource.disconnect();
+    currentSource = null;
+  }
+}
+
+export async function loadReferenceAudioBuffer(
+  animalId: AnimalId,
+): Promise<AudioBuffer> {
+  const cached = bufferCache.get(animalId);
+  if (cached) return cached;
+
+  const ctx = getAudioContext();
+  const response = await fetch(REFERENCE_SOUNDS[animalId]);
+  if (!response.ok) {
+    throw new Error("Could not load the reference sound.");
+  }
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = await ctx.decodeAudioData(arrayBuffer);
+  bufferCache.set(animalId, buffer);
+  return buffer;
+}
+
+export interface PlayReferenceOptions {
+  onProgress?: (progress: number) => void;
+}
+
+export async function playReferenceSound(
+  animalId: AnimalId,
+  options?: PlayReferenceOptions,
+): Promise<void> {
+  stopCurrentPlayback();
+
+  const ctx = getAudioContext();
+  if (ctx.state === "suspended") {
+    await ctx.resume();
   }
 
-  const audio = new Audio(REFERENCE_SOUNDS[animalId]);
-  currentAudio = audio;
+  const buffer = await loadReferenceAudioBuffer(animalId);
+  const source = ctx.createBufferSource();
+  source.buffer = buffer;
+  source.connect(ctx.destination);
+  currentSource = source;
+
+  const duration = buffer.duration;
+  const startTime = ctx.currentTime;
 
   await new Promise<void>((resolve, reject) => {
-    audio.onended = () => resolve();
-    audio.onerror = () => reject(new Error("Could not play the reference sound."));
-    audio.play().catch(reject);
+    source.onended = () => {
+      options?.onProgress?.(1);
+      resolve();
+    };
+
+    const tick = () => {
+      const elapsed = ctx.currentTime - startTime;
+      options?.onProgress?.(Math.min(1, elapsed / duration));
+      if (elapsed < duration) {
+        progressRaf = requestAnimationFrame(tick);
+      }
+    };
+
+    try {
+      source.start();
+      progressRaf = requestAnimationFrame(tick);
+    } catch (err) {
+      reject(
+        err instanceof Error
+          ? err
+          : new Error("Could not play the reference sound."),
+      );
+    }
   });
+}
+
+export function stopReferenceSound(): void {
+  stopCurrentPlayback();
 }
