@@ -46,8 +46,8 @@ describe("trimRecordingFromOnset", () => {
         duration: length / rate,
         sampleRate: rate,
         getChannelData: () => new Float32Array(length),
+        copyFromChannel: () => {},
         copyToChannel: (source: Float32Array, channel: number) => {
-          const target = (audioContext as { channel?: Float32Array }).channel;
           if (channel === 0) {
             (audioContext as { channel: Float32Array }).channel = source.slice();
           }
@@ -62,6 +62,7 @@ describe("trimRecordingFromOnset", () => {
       duration: samples.length / sampleRate,
       sampleRate,
       getChannelData: () => samples,
+      copyFromChannel: () => {},
       copyToChannel: () => {},
     } as AudioBuffer;
 
