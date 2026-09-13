@@ -1,4 +1,10 @@
-const MAX_RECORDING_SECONDS = 5;
+import {
+  SOUND_ACTIVITY_THRESHOLD,
+  trimRecordingFromOnset,
+} from "../scoring/features";
+
+const ONSET_CHECK_INTERVAL_MS = 50;
+const MAX_ONSET_WAIT_SECONDS = 5;
 
 export type RecordingState = "idle" | "countdown" | "recording" | "processing";
 
@@ -35,8 +41,46 @@ export function getMediaStream(): MediaStream | null {
   return mediaStream;
 }
 
+function analyserRms(analyser: AnalyserNode): number {
+  const data = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(data);
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) {
+    sum += data[i] * data[i];
+  }
+  return Math.sqrt(sum / data.length);
+}
+
+async function waitForSoundOnset(
+  stream: MediaStream,
+  ctx: AudioContext,
+  maxWaitMs: number,
+): Promise<void> {
+  const source = ctx.createMediaStreamSource(stream);
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 2048;
+  source.connect(analyser);
+
+  const deadline = Date.now() + maxWaitMs;
+
+  try {
+    while (Date.now() < deadline) {
+      if (analyserRms(analyser) >= SOUND_ACTIVITY_THRESHOLD) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, ONSET_CHECK_INTERVAL_MS));
+    }
+    throw new Error(
+      "We didn't hear anything. Try again when you're ready to make your sound.",
+    );
+  } finally {
+    source.disconnect();
+  }
+}
+
 export async function startRecording(
   onCountdownTick?: (secondsLeft: number) => void,
+  durationSeconds?: number,
 ): Promise<RecordingResult> {
   await requestMicrophone();
   if (!mediaStream) {
@@ -64,17 +108,37 @@ export async function startRecording(
     mediaRecorder!.onerror = () => reject(new Error("Recording failed."));
   });
 
-  mediaRecorder.start();
-  await new Promise((resolve) => setTimeout(resolve, MAX_RECORDING_SECONDS * 1000));
-  mediaRecorder.stop();
-
-  const blob = await recordingPromise;
+  if (!durationSeconds || durationSeconds <= 0) {
+    throw new Error("Recording duration must be greater than zero.");
+  }
 
   if (!audioContext) {
     audioContext = new AudioContext();
   }
+  if (audioContext.state === "suspended") {
+    await audioContext.resume();
+  }
+
+  mediaRecorder.start();
+  await waitForSoundOnset(
+    mediaStream,
+    audioContext,
+    MAX_ONSET_WAIT_SECONDS * 1000,
+  );
+  await new Promise((resolve) =>
+    setTimeout(resolve, durationSeconds * 1000),
+  );
+  mediaRecorder.stop();
+
+  const blob = await recordingPromise;
+
   const arrayBuffer = await blob.arrayBuffer();
-  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const decoded = await audioContext.decodeAudioData(arrayBuffer);
+  const audioBuffer = trimRecordingFromOnset(
+    decoded,
+    durationSeconds,
+    audioContext,
+  );
 
   return { blob, audioBuffer };
 }

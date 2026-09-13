@@ -136,10 +136,14 @@ export function PlayPage() {
     setStep("countdown");
 
     try {
-      const { audioBuffer } = await startRecording((secondsLeft) => {
-        setCountdown(secondsLeft);
-        setStep(secondsLeft > 0 ? "countdown" : "recording");
-      });
+      const referenceBuffer = await loadReferenceAudioBuffer(animal);
+      const { audioBuffer } = await startRecording(
+        (secondsLeft) => {
+          setCountdown(secondsLeft);
+          setStep(secondsLeft > 0 ? "countdown" : "recording");
+        },
+        referenceBuffer.duration,
+      );
 
       setRecordingPeaks(extractWaveformPeaks(audioBuffer));
       setStep("recording");

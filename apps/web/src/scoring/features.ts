@@ -5,7 +5,8 @@ const FRAME_SIZE = 2048;
 const HOP_SIZE = 1024;
 const MIN_PITCH_HZ = 60;
 const MAX_PITCH_HZ = 800;
-const NOISE_FLOOR = 0.01;
+export const SOUND_ACTIVITY_THRESHOLD = 0.01;
+const NOISE_FLOOR = SOUND_ACTIVITY_THRESHOLD;
 const CONTOUR_POINTS = 20;
 
 function downsample(values: number[], targetLength: number): number[] {
@@ -157,6 +158,59 @@ function pitchRangeFromFrames(pitchFrames: number[]): { min: number; max: number
     min: Math.max(MIN_PITCH_HZ, Math.floor(pitchMin * 0.9)),
     max: Math.min(MAX_PITCH_HZ, Math.ceil(pitchMax * 1.1)),
   };
+}
+
+function frameRms(channel: Float32Array, offset: number): number {
+  let sum = 0;
+  for (let j = 0; j < FRAME_SIZE; j++) {
+    const sample = channel[offset + j];
+    sum += sample * sample;
+  }
+  return Math.sqrt(sum / FRAME_SIZE);
+}
+
+function findFirstActiveSample(channel: Float32Array): number {
+  for (let i = 0; i + FRAME_SIZE <= channel.length; i += HOP_SIZE) {
+    if (frameRms(channel, i) >= NOISE_FLOOR) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+/** Trim leading silence and cap length to match the reference sound duration. */
+export function trimRecordingFromOnset(
+  audioBuffer: AudioBuffer,
+  maxDurationSeconds: number,
+  audioContext: AudioContext,
+): AudioBuffer {
+  const sampleRate = audioBuffer.sampleRate;
+  const referenceChannel = audioBuffer.getChannelData(0);
+  const firstActive = findFirstActiveSample(referenceChannel);
+  const maxSamples = Math.floor(maxDurationSeconds * sampleRate);
+  const endSample = Math.min(referenceChannel.length, firstActive + maxSamples);
+  const length = endSample - firstActive;
+
+  if (length <= 0) {
+    return audioBuffer;
+  }
+
+  if (firstActive === 0 && length === referenceChannel.length) {
+    return audioBuffer;
+  }
+
+  const trimmed = audioContext.createBuffer(
+    audioBuffer.numberOfChannels,
+    length,
+    sampleRate,
+  );
+
+  for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+    const channel = audioBuffer.getChannelData(ch);
+    trimmed.copyToChannel(channel.subarray(firstActive, endSample), ch);
+  }
+
+  return trimmed;
 }
 
 export function extractFeatures(

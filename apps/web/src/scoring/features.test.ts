@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { activeDurationFromRms, extractFeaturesFromChannel } from "./features";
+import {
+  activeDurationFromRms,
+  extractFeaturesFromChannel,
+  trimRecordingFromOnset,
+} from "./features";
 
 describe("activeDurationFromRms", () => {
   it("ignores leading and trailing silence", () => {
@@ -14,6 +18,62 @@ describe("activeDurationFromRms", () => {
     const duration = activeDurationFromRms(rmsFrames, sampleRate);
     expect(duration).toBeGreaterThan(0.1);
     expect(duration).toBeLessThan(0.5);
+  });
+});
+
+describe("trimRecordingFromOnset", () => {
+  it("removes leading silence and caps to the target duration", () => {
+    const sampleRate = 44100;
+    const totalSeconds = 3;
+    const activeSeconds = 1;
+    const silenceSeconds = 0.5;
+    const samples = new Float32Array(sampleRate * totalSeconds);
+
+    const start = Math.floor(sampleRate * silenceSeconds);
+    const end = start + Math.floor(sampleRate * activeSeconds);
+    for (let i = start; i < end; i++) {
+      samples[i] = Math.sin((2 * Math.PI * 180 * i) / sampleRate) * 0.4;
+    }
+
+    const audioContext = {
+      createBuffer: (
+        channels: number,
+        length: number,
+        rate: number,
+      ): AudioBuffer => ({
+        numberOfChannels: channels,
+        length,
+        duration: length / rate,
+        sampleRate: rate,
+        getChannelData: () => new Float32Array(length),
+        copyToChannel: (source: Float32Array, channel: number) => {
+          const target = (audioContext as { channel?: Float32Array }).channel;
+          if (channel === 0) {
+            (audioContext as { channel: Float32Array }).channel = source.slice();
+          }
+        },
+      }),
+      channel: new Float32Array(0),
+    } as AudioContext & { channel: Float32Array };
+
+    const sourceBuffer = {
+      numberOfChannels: 1,
+      length: samples.length,
+      duration: samples.length / sampleRate,
+      sampleRate,
+      getChannelData: () => samples,
+      copyToChannel: () => {},
+    } as AudioBuffer;
+
+    const trimmed = trimRecordingFromOnset(
+      sourceBuffer,
+      activeSeconds,
+      audioContext,
+    );
+
+    expect(trimmed.duration).toBeGreaterThan(0.8);
+    expect(trimmed.duration).toBeLessThanOrEqual(activeSeconds + 0.05);
+    expect(trimmed.duration).toBeLessThan(totalSeconds * 0.5);
   });
 });
 
