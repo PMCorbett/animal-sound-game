@@ -8,6 +8,7 @@
     "synth": "cdk synth",
     "deploy": "cdk deploy --all --require-approval never",
     "deploy:api": "cdk deploy AnimalSoundGame-ApiStack --require-approval never",
+    "deploy:cert": "cdk deploy AnimalSoundGame-CertStack --require-approval never",
     "deploy:web": "cdk deploy AnimalSoundGame-WebStack --require-approval never",
     "destroy": "cdk destroy --all"
   },

@@ -96,20 +96,30 @@ flowchart LR
 
 1. Install AWS CLI and CDK CLI (`npm install -g aws-cdk`).
 2. Configure AWS credentials locally (`aws configure` or SSO).
-3. Bootstrap CDK in your account/region:
+3. Bootstrap CDK in both regions (web/API in `eu-west-2`, CloudFront cert in `us-east-1`):
 
    ```bash
    cd infra
    npx cdk bootstrap aws://963777545862/eu-west-2
+   npx cdk bootstrap aws://963777545862/us-east-1
    ```
 
-4. Deploy the **CI stack first** to create the GitHub OIDC role (only needed once):
+4. Add your Route 53 hosted zone ID to `infra/cdk.json` context (required for `cdk synth` in CI):
+
+   ```bash
+   aws route53 list-hosted-zones-by-name --dns-name pmcorbett.dev \
+     --query "HostedZones[0].Id" --output text
+   ```
+
+   Set `"hostedZoneId": "Z0123456789ABC"` in the `context` block of `infra/cdk.json` (strip the `/hostedzone/` prefix if present).
+
+5. Deploy the **CI stack first** to create the GitHub OIDC role (only needed once):
 
    ```bash
    npx cdk deploy AnimalSoundGame-CiStack
    ```
 
-5. Set GitHub repository secrets (Settings → Secrets and variables → Actions):
+6. Set GitHub repository secrets (Settings → Secrets and variables → Actions):
    - **`AWS_ROLE_ARN`** — `arn:aws:iam::963777545862:role/AnimalSoundGame-GitHubActionsDeploy`
    - **`AWS_REGION`** — `eu-west-2`
 
@@ -124,6 +134,7 @@ Push to `main`. The workflow runs lint, test, and `cdk synth` on every PR; on me
 ```bash
 npm run build
 cd infra
+npx cdk deploy AnimalSoundGame-CertStack
 npx cdk deploy AnimalSoundGame-ApiStack
 export VITE_API_URL=$(aws cloudformation describe-stacks \
   --stack-name AnimalSoundGame-ApiStack \
@@ -132,6 +143,8 @@ export VITE_API_URL=$(aws cloudformation describe-stacks \
 VITE_API_URL=$VITE_API_URL npm run build -w @animal-sound-game/web
 npx cdk deploy AnimalSoundGame-WebStack
 ```
+
+The app is served at **https://animals.pmcorbett.dev** (override via `-c domainName=...` and `-c hostedZoneDomain=...`).
 
 Tear down after the event: `cd infra && npx cdk destroy --all`
 
@@ -143,7 +156,6 @@ Re-run the scoring formula in Lambda on submit. POST a compact feature vector (~
 
 ### Other ideas
 
-- Custom domain on CloudFront
 - WAF / API Gateway rate-limiting hardening
 - AI "funny comment" bonus round (not for core scoring)
 - Re-calibrate profiles from human imitation recordings (instead of reference animal sounds)

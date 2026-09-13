@@ -120,7 +120,13 @@ jobs:
         run: npm run build -w @animal-sound-game/web
 
       - name: Bootstrap CDK
-        run: npx cdk bootstrap aws://963777545862/${{ env.AWS_REGION }}
+        run: |
+          npx cdk bootstrap aws://963777545862/${{ env.AWS_REGION }}
+          npx cdk bootstrap aws://963777545862/us-east-1
+        working-directory: infra
+
+      - name: Deploy certificate stack
+        run: npm run deploy:cert
         working-directory: infra
 
       - name: Deploy API stack
