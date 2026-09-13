@@ -8,6 +8,10 @@ const app = new cdk.App();
 
 const githubRepo =
   app.node.tryGetContext("githubRepo") ?? "PMCorbett/animal-sound-game";
+const githubOwnerId =
+  app.node.tryGetContext("githubOwnerId") ?? "15815504";
+const githubRepoId =
+  app.node.tryGetContext("githubRepoId") ?? "1367630187";
 
 const AWS_ACCOUNT_ID = "963777545862";
 
@@ -35,4 +39,6 @@ new CiStack(app, "AnimalSoundGame-CiStack", {
   env,
   description: "Animal Sound Game — GitHub Actions OIDC deploy role",
   githubRepo,
+  githubOwnerId,
+  githubRepoId,
 });

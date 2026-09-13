@@ -4,11 +4,27 @@ import { Construct } from "constructs";
 
 export interface CiStackProps extends cdk.StackProps {
   githubRepo: string;
+  /** GitHub owner ID (numeric). Required when the repo uses immutable OIDC subjects. */
+  githubOwnerId?: string;
+  /** GitHub repository ID (numeric). Required when the repo uses immutable OIDC subjects. */
+  githubRepoId?: string;
 }
 
-function githubSubPatterns(owner: string, repo: string): string[] {
+function githubSubPatterns(
+  owner: string,
+  repo: string,
+  ownerId?: string,
+  repoId?: string,
+): string[] {
   const owners = new Set([owner, owner.toLowerCase()]);
-  return [...owners].map((o) => `repo:${o}/${repo}:*`);
+  const patterns = [...owners].map((o) => `repo:${o}/${repo}:*`);
+
+  if (ownerId && repoId) {
+    patterns.push(`repo:${owner}@${ownerId}/${repo}@${repoId}:*`);
+    patterns.push(`repo:${owner.toLowerCase()}@${ownerId}/${repo}@${repoId}:*`);
+  }
+
+  return patterns;
 }
 
 export class CiStack extends cdk.Stack {
@@ -22,7 +38,12 @@ export class CiStack extends cdk.Stack {
       throw new Error(`Invalid githubRepo: ${props.githubRepo}`);
     }
 
-    const subPatterns = githubSubPatterns(owner, repo);
+    const subPatterns = githubSubPatterns(
+      owner,
+      repo,
+      props.githubOwnerId,
+      props.githubRepoId,
+    );
 
     // CDK custom resource creates or updates the provider (incl. thumbprints).
     const provider = new iam.OpenIdConnectProvider(this, "GitHubOidcProvider", {
@@ -35,8 +56,6 @@ export class CiStack extends cdk.Stack {
       assumedBy: new iam.WebIdentityPrincipal(provider.openIdConnectProviderArn, {
         StringEquals: {
           "token.actions.githubusercontent.com:aud": "sts.amazonaws.com",
-          "token.actions.githubusercontent.com:iss":
-            "https://token.actions.githubusercontent.com",
         },
         StringLike: {
           "token.actions.githubusercontent.com:sub": subPatterns,
