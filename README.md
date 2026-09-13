@@ -113,6 +113,8 @@ flowchart LR
    - **`AWS_ROLE_ARN`** — `arn:aws:iam::963777545862:role/AnimalSoundGame-GitHubActionsDeploy`
    - **`AWS_REGION`** — `eu-west-2`
 
+   If GitHub Actions fails with *"The web identity token provided could not be validated"*, run `./scripts/fix-github-oidc.sh` locally (fixes OIDC thumbprints/audience), then redeploy `AnimalSoundGame-CiStack`.
+
 ### Deploy via GitHub Actions
 
 Push to `main`. The workflow runs lint, test, and `cdk synth` on every PR; on merge it deploys the API stack, builds the web app with the live API URL, then deploys the web stack.

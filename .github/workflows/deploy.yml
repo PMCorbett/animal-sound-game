@@ -58,11 +58,18 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify GitHub OIDC context
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "OIDC sub claim will be: repo:${{ github.repository }}:ref:${{ github.ref }}"
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
 
       - name: Bootstrap CDK
         run: npx cdk bootstrap aws://963777545862/${{ env.AWS_REGION }}
