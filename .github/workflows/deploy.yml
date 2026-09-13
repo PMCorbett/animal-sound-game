@@ -1,0 +1,89 @@
+name: Deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm run test
+
+      - name: Build web app for CDK assets
+        run: npm run build -w @animal-sound-game/web
+
+      - name: CDK synth
+        run: npm run synth
+
+  deploy:
+    needs: checks
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Bootstrap CDK
+        run: npx cdk bootstrap aws://963777545862/${{ env.AWS_REGION }}
+        working-directory: infra
+
+      - name: Deploy API stack
+        run: npm run deploy:api
+        working-directory: infra
+
+      - name: Resolve API URL
+        id: api
+        run: |
+          API_URL=$(aws cloudformation describe-stacks \
+            --stack-name AnimalSoundGame-ApiStack \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
+            --output text)
+          echo "url=$API_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Build web app with API URL
+        run: VITE_API_URL=${{ steps.api.outputs.url }} npm run build -w @animal-sound-game/web
+
+      - name: Deploy web and CI stacks
+        run: npx cdk deploy AnimalSoundGame-WebStack AnimalSoundGame-CiStack --require-approval never
+        working-directory: infra

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { isApiConfigured } from "../api/client";
 import { ANIMALS } from "../data/animals";
 import { LeaderboardTable } from "../components/LeaderboardTable";
 import { useLeaderboard } from "../hooks/useLeaderboard";
@@ -8,7 +9,7 @@ import type { AnimalId, PlayerMode } from "../types";
 type ModeFilter = PlayerMode | "all";
 
 export function LeaderboardPage() {
-  const { getFiltered } = useLeaderboard();
+  const { getFiltered, loading, error, refresh } = useLeaderboard();
   const [animalFilter, setAnimalFilter] = useState<AnimalId | "all">("all");
   const [modeFilter, setModeFilter] = useState<ModeFilter>("all");
 
@@ -25,7 +26,21 @@ export function LeaderboardPage() {
     <div className="leaderboard-page">
       <header className="page-header">
         <h1>Leaderboard</h1>
-        <p>Top scores from this device (saved locally for now)</p>
+        <p>
+          {isApiConfigured()
+            ? "Top scores from everyone playing — refreshes every 30 seconds"
+            : "Top scores on this device (local mode — set VITE_API_URL for cloud leaderboard)"}
+        </p>
+        {isApiConfigured() && (
+          <button type="button" className="btn btn-ghost" onClick={() => void refresh()}>
+            {loading ? "Refreshing…" : "Refresh now"}
+          </button>
+        )}
+        {error && (
+          <p className="error-message" role="alert">
+            {error}
+          </p>
+        )}
       </header>
 
       <div className="filter-tabs">

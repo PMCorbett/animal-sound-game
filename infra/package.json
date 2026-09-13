@@ -1,0 +1,24 @@
+{
+  "name": "@animal-sound-game/infra",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --all --require-approval never",
+    "deploy:api": "cdk deploy AnimalSoundGame-ApiStack --require-approval never",
+    "deploy:web": "cdk deploy AnimalSoundGame-WebStack --require-approval never",
+    "destroy": "cdk destroy --all"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.195.0",
+    "constructs": "^10.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "aws-cdk": "^2.1007.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}

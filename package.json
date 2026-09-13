@@ -2,13 +2,17 @@
   "name": "animal-sound-game",
   "private": true,
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "services/*",
+    "infra"
   ],
   "scripts": {
     "dev": "npm run dev -w @animal-sound-game/web",
     "build": "npm run build -w @animal-sound-game/web",
-    "lint": "npm run lint -w @animal-sound-game/web",
-    "test": "npm run test -w @animal-sound-game/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "synth": "npm run synth -w @animal-sound-game/infra",
+    "deploy": "npm run deploy -w @animal-sound-game/infra",
     "generate-profiles": "tsx scripts/generate-profiles.ts"
   },
   "devDependencies": {

@@ -1,9 +1,15 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  fetchLeaderboard,
+  isApiConfigured,
+  submitScoreToApi,
+} from "../api/client";
 import type { AnimalId, LeaderboardEntry, PlayerMode } from "../types";
 
 const STORAGE_KEY = "animal-sound-game-leaderboard";
+const REFRESH_INTERVAL_MS = 30_000;
 
-function loadEntries(): LeaderboardEntry[] {
+function loadLocalEntries(): LeaderboardEntry[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     return raw ? (JSON.parse(raw) as LeaderboardEntry[]) : [];
@@ -12,18 +18,66 @@ function loadEntries(): LeaderboardEntry[] {
   }
 }
 
-function saveEntries(entries: LeaderboardEntry[]): void {
+function saveLocalEntries(entries: LeaderboardEntry[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 }
 
 export function useLeaderboard() {
-  const [entries, setEntries] = useState<LeaderboardEntry[]>(loadEntries);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>(() =>
+    isApiConfigured() ? [] : loadLocalEntries(),
+  );
+  const [loading, setLoading] = useState(isApiConfigured());
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    if (!isApiConfigured()) {
+      setEntries(loadLocalEntries());
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await fetchLeaderboard({ limit: 100 });
+      setEntries(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load leaderboard");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refresh();
+    if (!isApiConfigured()) return;
+
+    const timer = window.setInterval(() => {
+      void refresh();
+    }, REFRESH_INTERVAL_MS);
+
+    return () => window.clearInterval(timer);
+  }, [refresh]);
 
   const submitScore = useCallback(
-    (nickname: string, animal: AnimalId, score: number, mode: PlayerMode) => {
+    async (
+      nickname: string,
+      animal: AnimalId,
+      score: number,
+      mode: PlayerMode,
+    ): Promise<LeaderboardEntry> => {
+      const trimmed = nickname.trim().slice(0, 20);
+
+      if (isApiConfigured()) {
+        const entry = await submitScoreToApi(trimmed, animal, score, mode);
+        setEntries((prev) =>
+          [...prev, entry].sort((a, b) => b.score - a.score),
+        );
+        return entry;
+      }
+
       const entry: LeaderboardEntry = {
         id: crypto.randomUUID(),
-        nickname: nickname.trim().slice(0, 20),
+        nickname: trimmed,
         animal,
         score,
         mode,
@@ -31,7 +85,7 @@ export function useLeaderboard() {
       };
       setEntries((prev) => {
         const next = [...prev, entry].sort((a, b) => b.score - a.score);
-        saveEntries(next);
+        saveLocalEntries(next);
         return next;
       });
       return entry;
@@ -49,5 +103,5 @@ export function useLeaderboard() {
     [entries],
   );
 
-  return { entries, submitScore, getFiltered };
+  return { entries, submitScore, getFiltered, loading, error, refresh };
 }

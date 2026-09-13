@@ -88,10 +88,17 @@ export function PlayPage() {
     setStep("scored");
   }
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!animal || !result || !nickname.trim() || practiceMode) return;
-    submitScore(nickname.trim(), animal, result.finalScore, mode);
-    setSubmitted(true);
+    setError(null);
+    try {
+      await submitScore(nickname.trim(), animal, result.finalScore, mode);
+      setSubmitted(true);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not save score. Try again.",
+      );
+    }
   }
 
   function handlePlayAgain() {
