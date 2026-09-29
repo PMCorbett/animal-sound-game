@@ -147,7 +147,10 @@ jobs:
           echo "url=$API_URL" >> "$GITHUB_OUTPUT"
           echo "ws_url=$WS_URL" >> "$GITHUB_OUTPUT"
 
-      - name: Build web app with API URL
+      - name: Build web app with API URL and upload Sentry source maps
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VITE_SENTRY_DSN: https://685a4efb73acd6c4bb72a745e5c6921a@o4512171340464128.ingest.de.sentry.io/4512171347542096
         run: VITE_API_URL=${{ steps.api.outputs.url }} VITE_WS_URL=${{ steps.api.outputs.ws_url }} npm run build -w @animal-sound-game/web
 
       - name: Deploy web and CI stacks
