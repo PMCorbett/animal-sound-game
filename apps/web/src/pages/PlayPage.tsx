@@ -16,7 +16,7 @@ import { AnimalPicker } from "../components/AnimalPicker";
 import { MicrophonePrimer } from "../components/MicrophonePrimer";
 import { ModePicker } from "../components/ModePicker";
 import { PrivacyNotice } from "../components/PrivacyNotice";
-import { ScoreDisplay } from "../components/ScoreDisplay";
+import { ScoreBreakdown, ScoreDisplay } from "../components/ScoreDisplay";
 import { SoundWaveVisualizer } from "../components/SoundWaveVisualizer";
 import { WaveformCompare } from "../components/WaveformCompare";
 import { WaveformDisplay } from "../components/WaveformDisplay";
@@ -220,11 +220,20 @@ export function PlayPage() {
     setStep("pickMode");
   }
 
-  function handleBackToAnimalPick() {
+  function handleBackToConfirmPlay() {
     stopReferenceSound();
     setError(null);
     setPlaybackProgress(undefined);
-    setStep("pickAnimal");
+    setStep("confirmPlay");
+  }
+
+  function handleBackToReadyFromScore() {
+    stopReferenceSound();
+    setError(null);
+    setResult(null);
+    setRecordingPeaks([]);
+    setPlaybackProgress(undefined);
+    setStep("ready");
   }
 
   const modeLabel = mode === "child" ? "Kid" : "Grown-up";
@@ -278,6 +287,7 @@ export function PlayPage() {
 
       {step === "ready" && selectedAnimal && (
         <WizardStepPanel stepKey="ready">
+          <WizardBack onClick={handleBackToConfirmPlay} />
           <div className="ready-panel">
             <p className="ready-animal ready-animal-bounce">
               {selectedAnimal.emoji} {selectedAnimal.name}
@@ -307,13 +317,6 @@ export function PlayPage() {
               onClick={handleStartRecord}
             >
               🎤 Record my sound
-            </button>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={handleBackToAnimalPick}
-            >
-              ← Choose a different animal
             </button>
           </div>
         </WizardStepPanel>
@@ -353,6 +356,7 @@ export function PlayPage() {
 
       {step === "showScore" && result && selectedAnimal && (
         <WizardStepPanel stepKey="showScore">
+          <WizardBack onClick={handleBackToReadyFromScore} />
           <div className="scored-panel">
             <WaveformCompare
               referencePeaks={referencePeaks}
@@ -369,6 +373,7 @@ export function PlayPage() {
                 Continue
               </button>
             </div>
+            <ScoreBreakdown result={result} />
           </div>
         </WizardStepPanel>
       )}

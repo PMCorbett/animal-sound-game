@@ -305,7 +305,7 @@ h2 {
 /* Score display */
 .score-display {
   text-align: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .score-circle {
@@ -351,15 +351,53 @@ h2 {
 
 .score-breakdown {
   text-align: left;
-  margin: 1rem auto;
-  max-width: 280px;
+  margin: 1.5rem auto 0;
+  max-width: 320px;
+  width: 100%;
   font-size: 0.9rem;
   color: var(--text-muted);
 }
 
-.score-breakdown ul {
-  margin: 0.5rem 0 0;
-  padding-left: 1.25rem;
+.score-breakdown-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+
+.score-breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.score-breakdown-table th,
+.score-breakdown-table td {
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.score-breakdown-table tr:last-child th,
+.score-breakdown-table tr:last-child td {
+  border-bottom: none;
+}
+
+.score-breakdown-table th {
+  font-weight: 600;
+  text-align: left;
+  color: var(--text);
+}
+
+.score-breakdown-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--primary-dark);
+  white-space: nowrap;
 }
 
 /* Waveform display */

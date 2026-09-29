@@ -4,6 +4,16 @@ interface ScoreDisplayProps {
   result: ScoreResult;
 }
 
+const BREAKDOWN_ROWS: {
+  key: keyof ScoreResult["breakdown"];
+  label: string;
+}[] = [
+  { key: "duration", label: "Duration" },
+  { key: "pitch", label: "Pitch" },
+  { key: "envelope", label: "Energy" },
+  { key: "mfcc", label: "Sound shape" },
+];
+
 export function ScoreDisplay({ result }: ScoreDisplayProps) {
   return (
     <div className="score-display">
@@ -12,15 +22,24 @@ export function ScoreDisplay({ result }: ScoreDisplayProps) {
         <span className="score-label">out of 100</span>
       </div>
       <p className="score-message">{result.message}</p>
-      <details className="score-breakdown">
-        <summary>How we scored you</summary>
-        <ul>
-          <li>Duration: {result.breakdown.duration}%</li>
-          <li>Pitch: {result.breakdown.pitch}%</li>
-          <li>Energy: {result.breakdown.envelope}%</li>
-          <li>Sound shape: {result.breakdown.mfcc}%</li>
-        </ul>
-      </details>
+    </div>
+  );
+}
+
+export function ScoreBreakdown({ result }: ScoreDisplayProps) {
+  return (
+    <div className="score-breakdown">
+      <h3 className="score-breakdown-title">How we scored you</h3>
+      <table className="score-breakdown-table">
+        <tbody>
+          {BREAKDOWN_ROWS.map(({ key, label }) => (
+            <tr key={key}>
+              <th scope="row">{label}</th>
+              <td>{result.breakdown[key]}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
