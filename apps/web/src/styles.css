@@ -231,16 +231,6 @@ h2 {
   padding: 0.9rem 1.25rem;
 }
 
-.practice-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
 /* Ready / recording panels */
 .ready-panel,
 .scored-panel {
@@ -357,12 +347,6 @@ h2 {
   font-weight: 600;
   color: var(--primary-dark);
   margin: 0 0 0.5rem;
-}
-
-.practice-badge {
-  font-size: 0.85rem;
-  color: var(--accent);
-  font-weight: 600;
 }
 
 .score-breakdown {

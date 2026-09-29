@@ -2,10 +2,9 @@ import type { ScoreResult } from "../types";
 
 interface ScoreDisplayProps {
   result: ScoreResult;
-  practiceMode: boolean;
 }
 
-export function ScoreDisplay({ result, practiceMode }: ScoreDisplayProps) {
+export function ScoreDisplay({ result }: ScoreDisplayProps) {
   return (
     <div className="score-display">
       <div className="score-circle score-circle-pop">
@@ -13,9 +12,6 @@ export function ScoreDisplay({ result, practiceMode }: ScoreDisplayProps) {
         <span className="score-label">out of 100</span>
       </div>
       <p className="score-message">{result.message}</p>
-      {practiceMode && (
-        <p className="practice-badge">Practice round — not saved</p>
-      )}
       <details className="score-breakdown">
         <summary>How we scored you</summary>
         <ul>

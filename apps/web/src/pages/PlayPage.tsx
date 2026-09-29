@@ -41,7 +41,6 @@ export function PlayPage() {
   const [step, setStep] = useState<GameStep>("setup");
   const [countdown, setCountdown] = useState(0);
   const [result, setResult] = useState<ScoreResult | null>(null);
-  const [practiceMode, setPracticeMode] = useState(false);
   const [nickname, setNickname] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -161,28 +160,8 @@ export function PlayPage() {
     }
   }
 
-  function handleDemoScore() {
-    if (!animal) return;
-    const profile = getProfile(animal);
-    const demoResult = scoreRecording(
-      {
-        duration: profile.duration.ideal,
-        pitchContour: profile.pitch.contour,
-        pitchHz: { min: profile.pitch.minHz, max: profile.pitch.maxHz },
-        envelope: profile.envelope,
-        mfcc: profile.mfcc,
-      },
-      profile,
-      mode,
-    );
-    setRecordingPeaks(profile.envelope);
-    setResult(demoResult);
-    setSubmitted(false);
-    setStep("scored");
-  }
-
   async function handleSubmit() {
-    if (!animal || !result || !nickname.trim() || practiceMode) return;
+    if (!animal || !result || !nickname.trim()) return;
     setError(null);
     try {
       await submitScore(nickname.trim(), animal, result.finalScore, mode);
@@ -221,14 +200,6 @@ export function PlayPage() {
         <>
           <ModePicker mode={mode} onChange={setMode} />
           <AnimalPicker selected={animal} onSelect={setAnimal} />
-          <label className="practice-toggle">
-            <input
-              type="checkbox"
-              checked={practiceMode}
-              onChange={(e) => setPracticeMode(e.target.checked)}
-            />
-            Practice mode (score but don&apos;t save)
-          </label>
           <button
             type="button"
             className="btn btn-primary btn-lets-play"
@@ -269,9 +240,6 @@ export function PlayPage() {
           >
             🎤 Record my sound
           </button>
-          <button type="button" className="btn btn-ghost" onClick={handleDemoScore}>
-            Demo mode (no mic needed)
-          </button>
           <button type="button" className="btn btn-ghost" onClick={handleBackToSetup}>
             ← Choose a different animal
           </button>
@@ -311,8 +279,8 @@ export function PlayPage() {
             recordingPeaks={recordingPeaks}
             referenceLabel={`${selectedAnimal.name} sound`}
           />
-          <ScoreDisplay result={result} practiceMode={practiceMode} />
-          {!practiceMode && !submitted && (
+          <ScoreDisplay result={result} />
+          {!submitted && (
             <div className="submit-form">
               <label className="nickname-label" htmlFor="nickname">
                 Choose a fun nickname
