@@ -118,7 +118,7 @@ export function LeaderboardPage() {
       </div>
 
       <nav className="page-nav">
-        <Link to="/">← Back to play</Link>
+        <Link to="/">← Back home</Link>
       </nav>
     </div>
   );

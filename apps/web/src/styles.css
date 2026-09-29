@@ -834,6 +834,155 @@ h2 {
   }
 }
 
+/* Landing */
+.landing-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 60vh;
+  justify-content: center;
+}
+
+.landing-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 360px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.landing-btn-play {
+  text-decoration: none;
+  text-align: center;
+  display: block;
+}
+
+.landing-btn-secondary {
+  width: 100%;
+  margin-top: 0;
+  padding: 0.85rem 1.25rem;
+  text-decoration: none;
+  text-align: center;
+  display: block;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.landing-link-tertiary {
+  display: block;
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.landing-link-tertiary:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+/* Explainer */
+.explainer-page {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.explainer-body {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+  line-height: 1.55;
+  font-size: 1.05rem;
+}
+
+.explainer-body p {
+  margin: 0 0 1rem;
+}
+
+.explainer-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Wizard */
+.wizard-back-row {
+  margin-bottom: 0.5rem;
+}
+
+.wizard-back {
+  background: none;
+  border: none;
+  padding: 0.25rem 0;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.wizard-back:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+@keyframes wizard-step-enter {
+  0% {
+    transform: translateY(14px) scale(0.94);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(-5px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+.wizard-step-panel {
+  width: 100%;
+}
+
+.wizard-step-enter {
+  animation: wizard-step-enter 0.45s ease;
+}
+
+.confirm-play-panel,
+.finish-panel {
+  text-align: center;
+}
+
+.confirm-play-hint,
+.confirm-play-mode {
+  color: var(--text-muted);
+  margin: 0.5rem 0;
+}
+
+.wizard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.wizard-actions .btn {
+  margin-top: 0;
+}
+
+.wizard-actions a.btn {
+  text-decoration: none;
+  text-align: center;
+  display: block;
+  padding: 0.85rem 1.25rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-family: inherit;
+}
+
 /* Nav & errors */
 .page-nav {
   text-align: center;

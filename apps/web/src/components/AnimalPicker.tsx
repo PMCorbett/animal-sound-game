@@ -2,7 +2,7 @@ import { ANIMALS } from "../data/animals";
 import type { AnimalId } from "../types";
 
 interface AnimalPickerProps {
-  selected: AnimalId | null;
+  selected?: AnimalId | null;
   onSelect: (animalId: AnimalId) => void;
 }
 

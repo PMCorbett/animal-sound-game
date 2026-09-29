@@ -20,6 +20,7 @@ import { ScoreDisplay } from "../components/ScoreDisplay";
 import { SoundWaveVisualizer } from "../components/SoundWaveVisualizer";
 import { WaveformCompare } from "../components/WaveformCompare";
 import { WaveformDisplay } from "../components/WaveformDisplay";
+import { WizardStepPanel } from "../components/WizardStepPanel";
 import { getAnimal } from "../data/animals";
 import { useLeaderboard } from "../hooks/useLeaderboard";
 import { extractFeatures } from "../scoring/features";
@@ -28,22 +29,41 @@ import { scoreRecording } from "../scoring/scorer";
 import type { AnimalId, PlayerMode, ScoreResult } from "../types";
 
 type GameStep =
-  | "setup"
+  | "pickMode"
+  | "pickAnimal"
+  | "confirmPlay"
   | "ready"
   | "mic-primer"
   | "countdown"
   | "recording"
-  | "scored";
+  | "showScore"
+  | "enterNickname"
+  | "finish";
+
+function WizardBack({
+  onClick,
+  label = "← Back",
+}: {
+  onClick: () => void;
+  label?: string;
+}) {
+  return (
+    <nav className="wizard-back-row">
+      <button type="button" className="wizard-back" onClick={onClick}>
+        {label}
+      </button>
+    </nav>
+  );
+}
 
 export function PlayPage() {
   const { submitScore } = useLeaderboard();
   const [mode, setMode] = useState<PlayerMode>("child");
   const [animal, setAnimal] = useState<AnimalId | null>(null);
-  const [step, setStep] = useState<GameStep>("setup");
+  const [step, setStep] = useState<GameStep>("pickMode");
   const [countdown, setCountdown] = useState(0);
   const [result, setResult] = useState<ScoreResult | null>(null);
   const [nickname, setNickname] = useState("");
-  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [micLoading, setMicLoading] = useState(false);
@@ -56,10 +76,12 @@ export function PlayPage() {
   const selectedAnimal = animal ? getAnimal(animal) : null;
 
   useEffect(() => {
-    if (!animal || step === "setup") {
-      setReferencePeaks([]);
-      setRecordingPeaks([]);
-      setPlaybackProgress(undefined);
+    if (!animal || step === "pickMode" || step === "pickAnimal") {
+      if (step === "pickMode" || step === "pickAnimal") {
+        setReferencePeaks([]);
+        setRecordingPeaks([]);
+        setPlaybackProgress(undefined);
+      }
       return;
     }
 
@@ -78,6 +100,16 @@ export function PlayPage() {
       cancelled = true;
     };
   }, [animal, step]);
+
+  function handleModeSelect(nextMode: PlayerMode) {
+    setMode(nextMode);
+    setStep("pickAnimal");
+  }
+
+  function handleAnimalSelect(animalId: AnimalId) {
+    setAnimal(animalId);
+    setStep("confirmPlay");
+  }
 
   function handleLetsPlay() {
     if (!animal) return;
@@ -155,8 +187,7 @@ export function PlayPage() {
       const profile = getProfile(animal);
       const scoreResult = scoreRecording(features, profile, mode);
       setResult(scoreResult);
-      setSubmitted(false);
-      setStep("scored");
+      setStep("showScore");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Recording failed. Try again.",
@@ -170,7 +201,7 @@ export function PlayPage() {
     setError(null);
     try {
       await submitScore(nickname.trim(), animal, result.finalScore, mode);
-      setSubmitted(true);
+      setStep("finish");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not save score. Try again.",
@@ -181,152 +212,223 @@ export function PlayPage() {
   function handlePlayAgain() {
     stopReferenceSound();
     setResult(null);
-    setSubmitted(false);
+    setNickname("");
     setRecordingPeaks([]);
     setPlaybackProgress(undefined);
-    setStep("ready");
+    setAnimal(null);
+    setError(null);
+    setStep("pickMode");
   }
 
-  function handleBackToSetup() {
+  function handleBackToAnimalPick() {
     stopReferenceSound();
     setError(null);
     setPlaybackProgress(undefined);
-    setStep("setup");
+    setStep("pickAnimal");
   }
+
+  const modeLabel = mode === "child" ? "Kid" : "Grown-up";
 
   return (
     <div className="play-page">
-      <header className="page-header">
-        <h1>Animal Sound Game</h1>
-        <p>Imitate the animal sound and get a score!</p>
-      </header>
+      {step === "pickMode" && (
+        <WizardStepPanel stepKey="pickMode">
+          <nav className="wizard-back-row">
+            <Link to="/" className="wizard-back">
+              ← Home
+            </Link>
+          </nav>
+          <header className="page-header">
+            <h1>Animal Sound Game</h1>
+          </header>
+          <ModePicker onSelect={handleModeSelect} />
+        </WizardStepPanel>
+      )}
 
-      {step === "setup" && (
-        <>
-          <ModePicker mode={mode} onChange={setMode} />
-          <AnimalPicker selected={animal} onSelect={setAnimal} />
-          <button
-            type="button"
-            className="btn btn-primary btn-lets-play"
-            onClick={handleLetsPlay}
-            disabled={!animal}
-          >
-            Let&apos;s play!
-          </button>
-        </>
+      {step === "pickAnimal" && (
+        <WizardStepPanel stepKey="pickAnimal">
+          <WizardBack onClick={() => setStep("pickMode")} />
+          <AnimalPicker selected={animal} onSelect={handleAnimalSelect} />
+        </WizardStepPanel>
+      )}
+
+      {step === "confirmPlay" && selectedAnimal && (
+        <WizardStepPanel stepKey="confirmPlay">
+          <WizardBack onClick={() => setStep("pickAnimal")} />
+          <div className="confirm-play-panel">
+            <p className="ready-animal ready-animal-bounce">
+              {selectedAnimal.emoji} {selectedAnimal.name}
+            </p>
+            <p className="confirm-play-hint">
+              You will imitate: <strong>{selectedAnimal.soundLabel}</strong>
+            </p>
+            <p className="confirm-play-mode">
+              Mode: <strong>{modeLabel}</strong>
+            </p>
+            <button
+              type="button"
+              className="btn btn-primary btn-lets-play"
+              onClick={handleLetsPlay}
+            >
+              Let&apos;s play!
+            </button>
+          </div>
+        </WizardStepPanel>
       )}
 
       {step === "ready" && selectedAnimal && (
-        <div className="ready-panel">
-          <p className="ready-animal ready-animal-bounce">
-            {selectedAnimal.emoji} {selectedAnimal.name}
-          </p>
-          <p>Imitate: <strong>{selectedAnimal.soundLabel}</strong></p>
-          <WaveformDisplay
-            peaks={referencePeaks}
-            label={`${selectedAnimal.name} sound`}
-            progress={isPlaying ? playbackProgress : undefined}
-            variant="reference"
-          />
-          <button
-            type="button"
-            className="btn btn-secondary btn-hear-sound"
-            onClick={handlePlayReference}
-            disabled={isPlaying}
-          >
-            {isPlaying
-              ? "Playing…"
-              : `🔊 Hear the ${selectedAnimal.name} sound`}
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary btn-record"
-            onClick={handleStartRecord}
-          >
-            🎤 Record my sound
-          </button>
-          <button type="button" className="btn btn-ghost" onClick={handleBackToSetup}>
-            ← Choose a different animal
-          </button>
-        </div>
+        <WizardStepPanel stepKey="ready">
+          <div className="ready-panel">
+            <p className="ready-animal ready-animal-bounce">
+              {selectedAnimal.emoji} {selectedAnimal.name}
+            </p>
+            <p>
+              Imitate: <strong>{selectedAnimal.soundLabel}</strong>
+            </p>
+            <WaveformDisplay
+              peaks={referencePeaks}
+              label={`${selectedAnimal.name} sound`}
+              progress={isPlaying ? playbackProgress : undefined}
+              variant="reference"
+            />
+            <button
+              type="button"
+              className="btn btn-secondary btn-hear-sound"
+              onClick={handlePlayReference}
+              disabled={isPlaying}
+            >
+              {isPlaying
+                ? "Playing…"
+                : `🔊 Hear the ${selectedAnimal.name} sound`}
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-record"
+              onClick={handleStartRecord}
+            >
+              🎤 Record my sound
+            </button>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={handleBackToAnimalPick}
+            >
+              ← Choose a different animal
+            </button>
+          </div>
+        </WizardStepPanel>
       )}
 
       {step === "mic-primer" && (
-        <MicrophonePrimer onEnable={handleEnableMicrophone} loading={micLoading} />
+        <WizardStepPanel stepKey="mic-primer">
+          <MicrophonePrimer onEnable={handleEnableMicrophone} loading={micLoading} />
+        </WizardStepPanel>
       )}
 
       {step === "countdown" && countdown > 0 && (
-        <div className="countdown-panel">
-          <p>Quiet moment…</p>
-          <span className="countdown-number countdown-pop">{countdown}</span>
-        </div>
+        <WizardStepPanel stepKey="countdown">
+          <div className="countdown-panel">
+            <p>Quiet moment…</p>
+            <span className="countdown-number countdown-pop">{countdown}</span>
+          </div>
+        </WizardStepPanel>
       )}
 
       {(step === "recording" || (step === "countdown" && countdown === 0)) && (
-        <div className="recording-panel">
-          {referencePeaks.length > 0 && (
-            <WaveformDisplay
-              peaks={referencePeaks}
-              label={`${selectedAnimal?.name} sound`}
-              variant="reference"
-            />
-          )}
-          <SoundWaveVisualizer active={step === "recording"} />
-          <span className="recording-pulse">🎤</span>
-          <p>Recording… make your best {selectedAnimal?.soundLabel}</p>
-        </div>
+        <WizardStepPanel stepKey="recording">
+          <div className="recording-panel">
+            {referencePeaks.length > 0 && (
+              <WaveformDisplay
+                peaks={referencePeaks}
+                label={`${selectedAnimal?.name} sound`}
+                variant="reference"
+              />
+            )}
+            <SoundWaveVisualizer active={step === "recording"} />
+            <span className="recording-pulse">🎤</span>
+            <p>Recording… make your best {selectedAnimal?.soundLabel}</p>
+          </div>
+        </WizardStepPanel>
       )}
 
-      {step === "scored" && result && selectedAnimal && (
-        <div className="scored-panel">
-          <WaveformCompare
-            referencePeaks={referencePeaks}
-            recordingPeaks={recordingPeaks}
-            referenceLabel={`${selectedAnimal.name} sound`}
-          />
-          <ScoreDisplay result={result} />
-          {!submitted && (
-            <div className="submit-form">
-              <label className="nickname-label" htmlFor="nickname">
-                Choose a fun nickname
-              </label>
-              <input
-                id="nickname"
-                type="text"
-                placeholder="e.g. SuperMoo42"
-                maxLength={20}
-                value={nickname}
-                onChange={(e) => setNickname(e.target.value)}
-                className="nickname-input"
-                autoComplete="off"
-              />
-              <PrivacyNotice compact />
+      {step === "showScore" && result && selectedAnimal && (
+        <WizardStepPanel stepKey="showScore">
+          <div className="scored-panel">
+            <WaveformCompare
+              referencePeaks={referencePeaks}
+              recordingPeaks={recordingPeaks}
+              referenceLabel={`${selectedAnimal.name} sound`}
+            />
+            <ScoreDisplay result={result} />
+            <div className="wizard-actions">
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={handleSubmit}
-                disabled={!nickname.trim()}
+                onClick={() => setStep("enterNickname")}
               >
-                Save to leaderboard
+                Continue
               </button>
             </div>
-          )}
-          {submitted && (
-            <p className="submit-success">
-              Score saved! <Link to="/leaderboard">View leaderboard →</Link>
-            </p>
-          )}
-          <button type="button" className="btn btn-secondary" onClick={handlePlayAgain}>
-            Play again
-          </button>
-        </div>
+          </div>
+        </WizardStepPanel>
       )}
 
-      {error && <p className="error-message" role="alert">{error}</p>}
+      {step === "enterNickname" && result && (
+        <WizardStepPanel stepKey="enterNickname">
+          <WizardBack onClick={() => setStep("showScore")} />
+          <div className="submit-form">
+            <h2>Pick a fun nickname</h2>
+            <label className="nickname-label" htmlFor="nickname">
+              This name goes on the leaderboard
+            </label>
+            <input
+              id="nickname"
+              type="text"
+              placeholder="e.g. SuperMoo42"
+              maxLength={20}
+              value={nickname}
+              onChange={(e) => setNickname(e.target.value)}
+              className="nickname-input"
+              autoComplete="off"
+            />
+            <PrivacyNotice compact />
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => void handleSubmit()}
+              disabled={!nickname.trim()}
+            >
+              Save to leaderboard
+            </button>
+          </div>
+        </WizardStepPanel>
+      )}
 
-      <nav className="page-nav">
-        <Link to="/leaderboard">View leaderboard</Link>
-      </nav>
+      {step === "finish" && (
+        <WizardStepPanel stepKey="finish">
+          <div className="finish-panel">
+            <p className="submit-success">Your score is saved. Great job!</p>
+            <div className="wizard-actions">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handlePlayAgain}
+              >
+                Play again
+              </button>
+              <Link to="/leaderboard" className="btn btn-secondary">
+                View leaderboard
+              </Link>
+            </div>
+          </div>
+        </WizardStepPanel>
+      )}
+
+      {error && (
+        <p className="error-message" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
