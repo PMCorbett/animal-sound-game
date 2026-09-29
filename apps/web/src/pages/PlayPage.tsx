@@ -5,6 +5,7 @@ import {
   playReferenceSound,
   stopReferenceSound,
 } from "../audio/player";
+import { unlockAudioOnUserGesture } from "../audio/unlock";
 import {
   hasMicrophoneAccess,
   requestMicrophone,
@@ -80,12 +81,14 @@ export function PlayPage() {
 
   function handleLetsPlay() {
     if (!animal) return;
+    unlockAudioOnUserGesture();
     setError(null);
     setStep("ready");
   }
 
   async function handlePlayReference() {
     if (!animal) return;
+    unlockAudioOnUserGesture();
     setIsPlaying(true);
     setError(null);
     setPlaybackProgress(0);
@@ -103,6 +106,7 @@ export function PlayPage() {
 
   function handleStartRecord() {
     if (!animal) return;
+    unlockAudioOnUserGesture();
     setError(null);
     if (!hasMicrophoneAccess()) {
       setStep("mic-primer");
@@ -112,6 +116,7 @@ export function PlayPage() {
   }
 
   async function handleEnableMicrophone() {
+    unlockAudioOnUserGesture();
     setMicLoading(true);
     setError(null);
     try {

@@ -1,5 +1,7 @@
 import type { AnimalId } from "../types";
 
+import { getAudioContext } from "./context";
+
 import catSound from "@assets/sounds/cat.mp3";
 import cowSound from "@assets/sounds/cow.mp3";
 import dogSound from "@assets/sounds/dog.mp3";
@@ -14,17 +16,9 @@ const REFERENCE_SOUNDS: Record<AnimalId, string> = {
   duck: duckSound,
 };
 
-let audioContext: AudioContext | null = null;
 let currentSource: AudioBufferSourceNode | null = null;
 let progressRaf = 0;
 const bufferCache = new Map<AnimalId, AudioBuffer>();
-
-function getAudioContext(): AudioContext {
-  if (!audioContext) {
-    audioContext = new AudioContext();
-  }
-  return audioContext;
-}
 
 function stopCurrentPlayback(): void {
   cancelAnimationFrame(progressRaf);
@@ -67,10 +61,6 @@ export async function playReferenceSound(
   stopCurrentPlayback();
 
   const ctx = getAudioContext();
-  if (ctx.state === "suspended") {
-    await ctx.resume();
-  }
-
   const buffer = await loadReferenceAudioBuffer(animalId);
   const source = ctx.createBufferSource();
   source.buffer = buffer;
@@ -95,7 +85,8 @@ export async function playReferenceSound(
     };
 
     try {
-      source.start();
+      void ctx.resume();
+      source.start(0);
       progressRaf = requestAnimationFrame(tick);
     } catch (err) {
       reject(
