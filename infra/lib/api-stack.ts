@@ -163,27 +163,32 @@ export class ApiStack extends cdk.Stack {
       apiHandler,
     );
 
-    const routePaths = [
-      "/leaderboard",
-      "/scores",
-      "/admin/auth/github",
-      "/admin/auth/callback",
-      "/admin/session",
-      "/admin/logout",
-      "/admin/leaderboard",
-      "/admin/scores",
+    // Do not register OPTIONS on Lambda routes — HttpApi corsPreflight handles
+    // preflight; explicit OPTIONS integrations return 404 without CORS method headers.
+    const routes: Array<{
+      path: string;
+      methods: apigwv2.HttpMethod[];
+    }> = [
+      { path: "/leaderboard", methods: [apigwv2.HttpMethod.GET] },
+      {
+        path: "/scores",
+        methods: [apigwv2.HttpMethod.GET, apigwv2.HttpMethod.POST],
+      },
+      { path: "/admin/auth/github", methods: [apigwv2.HttpMethod.GET] },
+      { path: "/admin/auth/callback", methods: [apigwv2.HttpMethod.GET] },
+      { path: "/admin/session", methods: [apigwv2.HttpMethod.GET] },
+      { path: "/admin/logout", methods: [apigwv2.HttpMethod.POST] },
+      { path: "/admin/leaderboard", methods: [apigwv2.HttpMethod.GET] },
+      {
+        path: "/admin/scores",
+        methods: [apigwv2.HttpMethod.PATCH, apigwv2.HttpMethod.DELETE],
+      },
     ];
 
-    for (const routePath of routePaths) {
+    for (const { path: routePath, methods } of routes) {
       httpApi.addRoutes({
         path: routePath,
-        methods: [
-          apigwv2.HttpMethod.GET,
-          apigwv2.HttpMethod.POST,
-          apigwv2.HttpMethod.PATCH,
-          apigwv2.HttpMethod.DELETE,
-          apigwv2.HttpMethod.OPTIONS,
-        ],
+        methods,
         integration,
       });
     }
