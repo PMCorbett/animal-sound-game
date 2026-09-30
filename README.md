@@ -157,6 +157,7 @@ Push to `main`. The workflow runs lint, test, and `cdk synth` on every PR; on me
 3. Update **Secrets Manager** secret `animal-sound-game/admin-auth` (output `AdminAuthSecretArn`):
    - Set JSON field **`githubClientSecret`** to the OAuth app client secret
    - Field **`sessionSecret`** is auto-generated on first deploy — leave it unless rotating
+   - Lambda loads this secret at runtime (no redeploy needed after updating `githubClientSecret`)
 4. Open `https://animals.pmcorbett.dev/admin`, sign in with GitHub as **PMCorbett**
 
 To add another moderator later, extend Lambda env **`ADMIN_GITHUB_ALLOWLIST`** (comma-separated GitHub logins) in CDK and redeploy the API stack.

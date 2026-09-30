@@ -70,12 +70,7 @@ export class ApiStack extends cdk.Stack {
         GITHUB_CLIENT_ID: githubOAuthClientId,
         ADMIN_GITHUB_ALLOWLIST: "PMCorbett",
         WEB_ADMIN_SUCCESS_URL: props.webAdminSuccessUrl,
-        SESSION_SECRET: adminAuthSecret
-          .secretValueFromJson("sessionSecret")
-          .unsafeUnwrap(),
-        GITHUB_CLIENT_SECRET: adminAuthSecret
-          .secretValueFromJson("githubClientSecret")
-          .unsafeUnwrap(),
+        ADMIN_AUTH_SECRET_ARN: adminAuthSecret.secretArn,
       },
       bundling: lambdaBundling,
     });

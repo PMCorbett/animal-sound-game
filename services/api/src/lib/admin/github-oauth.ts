@@ -5,11 +5,11 @@ import {
   SESSION_TTL_SECONDS,
   adminOAuthRedirectUri,
   githubClientId,
-  githubClientSecret,
   isAdminAuthConfigured,
   isAllowlistedGithubLogin,
   webAdminSuccessUrl,
 } from "./config.js";
+import { loadAdminAuthSecrets } from "./secrets.js";
 import {
   clearOAuthStateCookie,
   clearSessionCookie,
@@ -39,7 +39,7 @@ function adminErrorRedirect(code: string): APIGatewayProxyResultV2 {
 export async function handleGithubAuthStart(
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyResultV2> {
-  if (!isAdminAuthConfigured()) {
+  if (!(await isAdminAuthConfigured())) {
     return {
       statusCode: 503,
       headers: { "Content-Type": "application/json" },
@@ -74,6 +74,7 @@ export async function handleGithubAuthStart(
 interface GithubTokenResponse {
   access_token?: string;
   error?: string;
+  error_description?: string;
 }
 
 interface GithubUser {
@@ -82,6 +83,7 @@ interface GithubUser {
 }
 
 async function exchangeCodeForToken(code: string): Promise<string | null> {
+  const { githubClientSecret } = await loadAdminAuthSecrets();
   const response = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: {
@@ -90,18 +92,26 @@ async function exchangeCodeForToken(code: string): Promise<string | null> {
     },
     body: JSON.stringify({
       client_id: githubClientId(),
-      client_secret: githubClientSecret(),
+      client_secret: githubClientSecret,
       code,
       redirect_uri: adminOAuthRedirectUri(),
     }),
   });
 
-  if (!response.ok) {
+  const body = (await response.json()) as GithubTokenResponse;
+  if (!response.ok || !body.access_token) {
+    console.warn(
+      JSON.stringify({
+        type: "admin_oauth_token_error",
+        status: response.status,
+        error: body.error ?? "unknown",
+        errorDescription: body.error_description ?? null,
+      }),
+    );
     return null;
   }
 
-  const body = (await response.json()) as GithubTokenResponse;
-  return body.access_token ?? null;
+  return body.access_token;
 }
 
 async function fetchGithubUser(accessToken: string): Promise<GithubUser | null> {
@@ -114,6 +124,12 @@ async function fetchGithubUser(accessToken: string): Promise<GithubUser | null> 
   });
 
   if (!response.ok) {
+    console.warn(
+      JSON.stringify({
+        type: "admin_oauth_user_error",
+        status: response.status,
+      }),
+    );
     return null;
   }
 
@@ -123,7 +139,7 @@ async function fetchGithubUser(accessToken: string): Promise<GithubUser | null> 
 export async function handleGithubAuthCallback(
   event: APIGatewayProxyEventV2,
 ): Promise<APIGatewayProxyResultV2> {
-  if (!isAdminAuthConfigured()) {
+  if (!(await isAdminAuthConfigured())) {
     return adminErrorRedirect("not_configured");
   }
 
@@ -132,6 +148,16 @@ export async function handleGithubAuthCallback(
   const state = params.state;
 
   if (!code || !state) {
+    const githubError = params.error;
+    if (githubError) {
+      console.warn(
+        JSON.stringify({
+          type: "admin_oauth_github_error",
+          error: githubError,
+          description: params.error_description ?? null,
+        }),
+      );
+    }
     return adminErrorRedirect("oauth_failed");
   }
 
@@ -167,7 +193,7 @@ export async function handleGithubAuthCallback(
     return adminErrorRedirect("not_allowed");
   }
 
-  const token = createSessionToken({
+  const token = await createSessionToken({
     sub: String(user.id),
     login: user.login,
   });
@@ -186,10 +212,10 @@ export function handleAdminLogout(): APIGatewayProxyResultV2 {
   };
 }
 
-export function handleAdminSession(
+export async function handleAdminSession(
   event: APIGatewayProxyEventV2,
-): APIGatewayProxyResultV2 {
-  const session = readSessionFromEvent(event);
+): Promise<APIGatewayProxyResultV2> {
+  const session = await readSessionFromEvent(event);
   if (!session) {
     return {
       statusCode: 401,

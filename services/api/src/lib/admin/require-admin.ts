@@ -17,8 +17,10 @@ export class ForbiddenError extends Error {
 
 const CSRF_HEADER = "xmlhttprequest";
 
-export function requireAdmin(event: APIGatewayProxyEventV2): AdminSession {
-  const session = readSessionFromEvent(event);
+export async function requireAdmin(
+  event: APIGatewayProxyEventV2,
+): Promise<AdminSession> {
+  const session = await readSessionFromEvent(event);
   if (!session) {
     throw new AuthError("Authentication required");
   }

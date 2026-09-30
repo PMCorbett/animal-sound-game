@@ -5,8 +5,8 @@ import {
   SESSION_COOKIE_NAME,
   SESSION_TTL_SECONDS,
   isAllowlistedGithubLogin,
-  sessionSecret,
 } from "./config.js";
+import { loadAdminAuthSecrets } from "./secrets.js";
 
 export interface AdminSession {
   sub: string;
@@ -17,17 +17,13 @@ function base64urlEncode(value: string): string {
   return Buffer.from(value, "utf8").toString("base64url");
 }
 
-function base64urlDecode(value: string): string {
-  return Buffer.from(value, "base64url").toString("utf8");
-}
-
 function signSegment(data: string, secret: string): string {
   return createHmac("sha256", secret).update(data).digest("base64url");
 }
 
-export function createSessionToken(session: AdminSession): string {
-  const secret = sessionSecret();
-  if (!secret) {
+export async function createSessionToken(session: AdminSession): Promise<string> {
+  const { sessionSecret } = await loadAdminAuthSecrets();
+  if (!sessionSecret) {
     throw new Error("SESSION_SECRET is not configured");
   }
 
@@ -41,13 +37,15 @@ export function createSessionToken(session: AdminSession): string {
       exp: now + SESSION_TTL_SECONDS,
     }),
   );
-  const signature = signSegment(`${header}.${payload}`, secret);
+  const signature = signSegment(`${header}.${payload}`, sessionSecret);
   return `${header}.${payload}.${signature}`;
 }
 
-export function verifySessionToken(token: string): AdminSession | null {
-  const secret = sessionSecret();
-  if (!secret) {
+export async function verifySessionToken(
+  token: string,
+): Promise<AdminSession | null> {
+  const { sessionSecret } = await loadAdminAuthSecrets();
+  if (!sessionSecret) {
     return null;
   }
 
@@ -57,7 +55,7 @@ export function verifySessionToken(token: string): AdminSession | null {
   }
 
   const [header, payload, signature] = parts;
-  const expected = signSegment(`${header}.${payload}`, secret);
+  const expected = signSegment(`${header}.${payload}`, sessionSecret);
   const sigBuf = Buffer.from(signature);
   const expBuf = Buffer.from(expected);
   if (sigBuf.length !== expBuf.length || !timingSafeEqual(sigBuf, expBuf)) {
@@ -65,7 +63,9 @@ export function verifySessionToken(token: string): AdminSession | null {
   }
 
   try {
-    const body = JSON.parse(base64urlDecode(payload)) as {
+    const body = JSON.parse(
+      Buffer.from(payload, "base64url").toString("utf8"),
+    ) as {
       sub?: string;
       login?: string;
       exp?: number;
@@ -116,9 +116,9 @@ export function parseCookieHeader(
   return result;
 }
 
-export function readSessionFromEvent(
+export async function readSessionFromEvent(
   event: APIGatewayProxyEventV2,
-): AdminSession | null {
+): Promise<AdminSession | null> {
   const cookies = parseCookieHeader(event.cookies);
   const token = cookies[SESSION_COOKIE_NAME];
   if (!token) {
@@ -128,11 +128,11 @@ export function readSessionFromEvent(
 }
 
 export function sessionCookie(token: string, maxAgeSeconds: number): string {
-  return `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAgeSeconds}`;
+  return `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=${maxAgeSeconds}`;
 }
 
 export function clearSessionCookie(): string {
-  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+  return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; Secure; SameSite=None; Max-Age=0`;
 }
 
 export function oauthStateCookie(state: string, maxAgeSeconds: number): string {

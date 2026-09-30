@@ -70,12 +70,12 @@ export async function handler(
     }
 
     if (method === "POST" && path === "/admin/logout") {
-      requireAdmin(event);
+      await requireAdmin(event);
       return handleAdminLogout();
     }
 
     if (method === "GET" && path === "/admin/leaderboard") {
-      const admin = requireAdmin(event);
+      const admin = await requireAdmin(event);
       const query = parseLeaderboardQuery(event.queryStringParameters ?? {});
       const entries = await getLeaderboard(query);
       logAdminAction("list_leaderboard", { githubLogin: admin.login });
@@ -83,7 +83,7 @@ export async function handler(
     }
 
     if (method === "DELETE" && path === "/admin/scores") {
-      const admin = requireAdmin(event);
+      const admin = await requireAdmin(event);
       const raw = event.body ? JSON.parse(event.body) : null;
       const ref = parseAdminScoreRef(raw);
       await deleteScore(ref.animal, ref.id);
@@ -96,7 +96,7 @@ export async function handler(
     }
 
     if (method === "PATCH" && path === "/admin/scores") {
-      const admin = requireAdmin(event);
+      const admin = await requireAdmin(event);
       const raw = event.body ? JSON.parse(event.body) : null;
       const body = parseAdminNicknameUpdate(raw);
       const entry = await updateScoreNickname(body.animal, body.id, body.nickname);

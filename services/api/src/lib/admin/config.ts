@@ -1,3 +1,5 @@
+import { loadAdminAuthSecrets } from "./secrets.js";
+
 export const SESSION_COOKIE_NAME = "admin_session";
 export const OAUTH_STATE_COOKIE_NAME = "admin_oauth_state";
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -6,14 +8,6 @@ export const DEFAULT_ADMIN_ALLOWLIST = "PMCorbett";
 
 export function githubClientId(): string {
   return process.env.GITHUB_CLIENT_ID?.trim() ?? "";
-}
-
-export function githubClientSecret(): string {
-  return process.env.GITHUB_CLIENT_SECRET?.trim() ?? "";
-}
-
-export function sessionSecret(): string {
-  return process.env.SESSION_SECRET?.trim() ?? "";
 }
 
 export function adminOAuthRedirectUri(): string {
@@ -35,11 +29,13 @@ export function adminGithubAllowlist(): Set<string> {
   );
 }
 
-export function isAdminAuthConfigured(): boolean {
+export async function isAdminAuthConfigured(): Promise<boolean> {
+  const secrets = await loadAdminAuthSecrets();
   return (
     githubClientId().length > 0 &&
-    githubClientSecret().length > 0 &&
-    sessionSecret().length > 0 &&
+    secrets.githubClientSecret.length > 0 &&
+    secrets.githubClientSecret !== "REPLACE_ME" &&
+    secrets.sessionSecret.length > 0 &&
     adminOAuthRedirectUri().length > 0 &&
     webAdminSuccessUrl().length > 0
   );
