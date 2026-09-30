@@ -15,26 +15,31 @@ const SLIDES: CareersSlide[] = [
     src: slideIphone1,
     caption: "Make software for phones!",
     alt: "Hand holding an iPhone showing a mobile app",
+    colorClass: "se-bubble-yellow",
   },
   {
     src: slideIphone2,
     caption: "Ask fun questions in apps!",
     alt: "Hand holding an iPhone showing a survey screen",
+    colorClass: "se-bubble-cyan",
   },
   {
     src: slideIphone3,
     caption: "Photos, videos, and sounds!",
     alt: "Hand holding an iPhone showing a camera app",
+    colorClass: "se-bubble-pink",
   },
   {
     src: slideIpad,
     caption: "Build apps for tablets!",
     alt: "iPad showing a guidance and support web app",
+    colorClass: "se-bubble-lime",
   },
   {
     src: slideMonitor,
     caption: "Make websites for big screens!",
     alt: "Desktop monitor showing a personal portfolio website",
+    colorClass: "se-bubble-orange",
   },
 ];
 
@@ -43,10 +48,11 @@ export function SoftwareEngineerPage() {
     <div className="se-display">
       <h1 className="se-title">Software Engineer</h1>
 
-      <CareersEpithetBubbles />
-
       <div className="se-display-grid">
-        <CareersPortfolioSlideshow slides={SLIDES} />
+        <div className="se-display-left">
+          <CareersEpithetBubbles />
+          <CareersPortfolioSlideshow slides={SLIDES} />
+        </div>
 
         <div className="se-leaderboard-panel">
           <LeaderboardScoresSection embedded defaultModeFilter="child" />
