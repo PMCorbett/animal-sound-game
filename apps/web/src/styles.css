@@ -40,6 +40,12 @@ body {
   max-width: 1100px;
 }
 
+.app-display {
+  max-width: none;
+  padding: clamp(1.5rem, 2vw, 3rem);
+  min-height: 100vh;
+}
+
 .page-header {
   text-align: center;
   margin-bottom: 2rem;
@@ -1107,6 +1113,187 @@ h2 {
   border-radius: var(--radius);
   text-align: center;
   margin-top: 1rem;
+}
+
+/* Leaderboard scores section (shared) */
+.leaderboard-scores-page-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.leaderboard-scores-page-header h1 {
+  font-size: 2rem;
+  margin: 0 0 0.5rem;
+  color: var(--primary-dark);
+}
+
+.leaderboard-scores-page-header p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+/* 4K Software Engineer display */
+.se-display {
+  width: 100%;
+}
+
+.se-title {
+  font-family: "Bangers", "Fredoka", system-ui, sans-serif;
+  font-size: clamp(3rem, 5vw, 6rem);
+  letter-spacing: 0.04em;
+  text-align: center;
+  margin: 0 0 clamp(1rem, 2vh, 2rem);
+  color: var(--primary-dark);
+  text-transform: uppercase;
+}
+
+.se-display-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(1.5rem, 2vw, 2.5rem);
+  align-items: start;
+}
+
+@media (min-width: 1200px) {
+  .se-display-grid {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  }
+}
+
+.se-display-left {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1.25rem, 2vh, 2rem);
+  min-width: 0;
+}
+
+.se-epithet-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 1.25rem;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.se-bubble {
+  position: relative;
+  max-width: 22rem;
+  padding: 1rem 1.25rem;
+  border: 4px solid #1a1a1a;
+  border-radius: 4px;
+  box-shadow: 6px 6px 0 #1a1a1a;
+}
+
+.se-bubble-text {
+  margin: 0;
+  font-size: clamp(1.15rem, 1.4vw, 1.75rem);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.se-bubble-punch {
+  display: block;
+  font-family: "Bangers", "Fredoka", system-ui, sans-serif;
+  font-size: clamp(1.5rem, 2vw, 2.25rem);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
+}
+
+.se-bubble-yellow {
+  background: #ffe566;
+}
+
+.se-bubble-cyan {
+  background: #7ee8fa;
+}
+
+.se-bubble-pink {
+  background: #ff9ecd;
+}
+
+.se-bubble-lime {
+  background: #b8f578;
+}
+
+.se-bubble-orange {
+  background: #ffb347;
+}
+
+.se-bubble-purple {
+  background: #c4b5fd;
+}
+
+.se-slideshow {
+  margin: 0;
+  min-width: 0;
+}
+
+.se-slideshow-frame {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #1a1a1a;
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.se-slideshow-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.se-slideshow-img-active {
+  opacity: 1;
+}
+
+.se-slideshow-caption {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  font-weight: 700;
+  color: var(--primary-dark);
+}
+
+.se-leaderboard-panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: clamp(1rem, 1.5vw, 1.75rem);
+  box-shadow: var(--shadow);
+  min-width: 0;
+  max-height: calc(100vh - 8rem);
+  overflow: auto;
+}
+
+.se-leaderboard-header h2 {
+  font-size: clamp(1.75rem, 2.5vw, 2.5rem);
+  margin: 0 0 0.5rem;
+  color: var(--primary-dark);
+  text-align: center;
+}
+
+.se-leaderboard-header p {
+  margin: 0 0 0.75rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: clamp(0.95rem, 1.2vw, 1.15rem);
+}
+
+.app-display .leaderboard-table {
+  font-size: clamp(0.95rem, 1.15vw, 1.2rem);
+}
+
+.app-display .leaderboard-table th,
+.app-display .leaderboard-table td {
+  padding: 0.65rem 0.85rem;
+}
+
+.app-display .filter-tab {
+  font-size: clamp(0.85rem, 1vw, 1rem);
 }
 
 /* Reduced motion */

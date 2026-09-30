@@ -16,6 +16,7 @@ Use this guide when presenting the Animal Sound Game at a school careers day.
 4. **Prepare demo tabs** — have these open in separate browser tabs:
    - The live game (play screen)
    - The leaderboard (with "How it works" panel visible)
+   - **4K careers display:** `/what-is-a-software-engineer` on a widescreen monitor (Software Engineer title, portfolio slideshow, live leaderboard)
    - A recent green GitHub Actions deploy run
    - AWS DynamoDB console (Scores table) — optional, for the "watch data appear" moment
 

@@ -17,7 +17,7 @@ export function App() {
         />
         <Route
           path="/what-is-a-software-engineer"
-          element={<main className="app app-play"><SoftwareEngineerPage /></main>}
+          element={<main className="app app-display"><SoftwareEngineerPage /></main>}
         />
         <Route
           path="/admin"
