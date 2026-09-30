@@ -1160,24 +1160,18 @@ h2 {
   }
 }
 
-.se-display-left {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(1.25rem, 2vh, 2rem);
-  min-width: 0;
-}
-
 .se-epithet-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 1.25rem;
-  align-items: flex-start;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: clamp(0.75rem, 1.2vw, 1.25rem);
+  width: 100%;
+  margin-bottom: clamp(1.25rem, 2vh, 2rem);
+  align-items: stretch;
 }
 
 .se-bubble {
   position: relative;
-  max-width: 22rem;
+  max-width: none;
   padding: 1rem 1.25rem;
   border: 4px solid #1a1a1a;
   border-radius: 4px;
@@ -1231,10 +1225,8 @@ h2 {
 .se-slideshow-frame {
   position: relative;
   aspect-ratio: 16 / 9;
-  background: #1a1a1a;
-  border-radius: var(--radius);
+  background: transparent;
   overflow: hidden;
-  box-shadow: var(--shadow);
 }
 
 .se-slideshow-img {

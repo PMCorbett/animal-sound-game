@@ -8,25 +8,21 @@ export interface EpithetItem {
 
 const EPITHETS: EpithetItem[] = [
   {
-    punch: "WOW!",
     text: "Software is anything that shows on a screen",
     rotationDeg: -4,
     colorClass: "se-bubble-yellow",
   },
   {
-    punch: "POW!",
     text: "Engineers design and build things",
     rotationDeg: 3,
     colorClass: "se-bubble-cyan",
   },
   {
-    punch: "ZAP!",
     text: "Software Engineers build software",
     rotationDeg: -2,
     colorClass: "se-bubble-pink",
   },
   {
-    punch: "BAM!",
     text: "Software lets you build anything you can imagine",
     rotationDeg: 5,
     colorClass: "se-bubble-lime",
