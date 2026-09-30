@@ -80,3 +80,47 @@ export function parseLeaderboardQuery(params: Record<string, string | undefined>
     limit,
   };
 }
+
+export function parseAdminScoreRef(raw: unknown): {
+  id: string;
+  animal: AnimalId;
+} {
+  if (!raw || typeof raw !== "object") {
+    throw new ValidationError("Request body must be a JSON object");
+  }
+
+  const body = raw as Record<string, unknown>;
+  const id = typeof body.id === "string" ? body.id.trim() : "";
+  const animal = body.animal;
+
+  if (!id || !id.startsWith("SCORE#")) {
+    throw new ValidationError("Invalid score id");
+  }
+
+  if (!ANIMAL_IDS.includes(animal as AnimalId)) {
+    throw new ValidationError("Invalid animal");
+  }
+
+  return { id, animal: animal as AnimalId };
+}
+
+export function parseAdminNicknameUpdate(raw: unknown): {
+  id: string;
+  animal: AnimalId;
+  nickname: string;
+} {
+  if (!raw || typeof raw !== "object") {
+    throw new ValidationError("Request body must be a JSON object");
+  }
+
+  const ref = parseAdminScoreRef(raw);
+  const body = raw as Record<string, unknown>;
+  const nickname =
+    typeof body.nickname === "string" ? body.nickname.trim() : "";
+
+  if (!nickname || nickname.length > MAX_NICKNAME_LENGTH) {
+    throw new ValidationError("Nickname must be 1–20 characters");
+  }
+
+  return { ...ref, nickname };
+}

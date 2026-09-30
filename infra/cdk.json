@@ -14,6 +14,7 @@
     ]
   },
   "context": {
+    "githubOAuthClientId": "Ov23liSU5TtDjOj2vOor",
     "hostedZoneId": "Z00668983SKYVYGNNXAD2",
     "@aws-cdk/aws-lambda:recognizeLayerVersion": true,
     "@aws-cdk/core:checkSecretUsage": true,

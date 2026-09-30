@@ -94,6 +94,15 @@ flowchart LR
 - `GET /leaderboard?limit=20` — global top 20
 - `POST /scores` — `{ nickname, animal, score, mode }` (trusts client score in v1)
 
+**Admin moderation** (GitHub OAuth, allowlisted GitHub user `PMCorbett` only)
+
+- Web UI: `/admin` on the SPA (not linked from public navigation)
+- `GET /admin/auth/github` — start GitHub OAuth (sets session cookie on API domain)
+- `GET /admin/session` — current admin session (HttpOnly cookie)
+- `GET /admin/leaderboard` — up to 100 entries for moderation
+- `DELETE /admin/scores` — `{ id, animal }` removes both DynamoDB rows
+- `PATCH /admin/scores` — `{ id, animal, nickname }` updates nickname on both rows
+
 ## How to deploy
 
 ### One-time AWS setup
@@ -133,13 +142,32 @@ flowchart LR
 
 Push to `main`. The workflow runs lint, test, and `cdk synth` on every PR; on merge it deploys the API stack, builds the web app with the live API URL, then deploys the web stack.
 
+### Admin GitHub OAuth (one-time)
+
+1. Create a **GitHub OAuth App** (Settings → Developer settings → OAuth Apps):
+   - **Authorization callback URL** — use stack output `AdminOAuthCallbackUrl` after the API stack exists (`https://…execute-api…/admin/auth/callback`)
+   - For local API testing, add a second callback if you run the API on localhost
+2. Deploy the API stack with your OAuth **Client ID** (public):
+
+   ```bash
+   cd infra
+   npx cdk deploy AnimalSoundGame-ApiStack -c githubOAuthClientId=YOUR_GITHUB_CLIENT_ID
+   ```
+
+3. Update **Secrets Manager** secret `animal-sound-game/admin-auth` (output `AdminAuthSecretArn`):
+   - Set JSON field **`githubClientSecret`** to the OAuth app client secret
+   - Field **`sessionSecret`** is auto-generated on first deploy — leave it unless rotating
+4. Open `https://animals.pmcorbett.dev/admin`, sign in with GitHub as **PMCorbett**
+
+To add another moderator later, extend Lambda env **`ADMIN_GITHUB_ALLOWLIST`** (comma-separated GitHub logins) in CDK and redeploy the API stack.
+
 ### Manual deploy
 
 ```bash
 npm run build
 cd infra
 npx cdk deploy AnimalSoundGame-CertStack
-npx cdk deploy AnimalSoundGame-ApiStack
+npx cdk deploy AnimalSoundGame-ApiStack -c githubOAuthClientId=YOUR_GITHUB_CLIENT_ID
 export VITE_API_URL=$(aws cloudformation describe-stacks \
   --stack-name AnimalSoundGame-ApiStack \
   --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \

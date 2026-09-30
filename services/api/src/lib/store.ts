@@ -3,9 +3,11 @@ import {
   ConditionalCheckFailedException,
 } from "@aws-sdk/client-dynamodb";
 import {
+  DeleteCommand,
   DynamoDBDocumentClient,
   PutCommand,
   QueryCommand,
+  UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import type { AnimalId, LeaderboardEntry, PlayerMode, SubmitScoreBody } from "../types.js";
 import { isBlockedNickname } from "./blocklist.js";
@@ -144,4 +146,86 @@ export async function submitScore(body: SubmitScoreBody): Promise<LeaderboardEnt
   }
 
   return entry;
+}
+
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotFoundError";
+  }
+}
+
+async function scoreItemExists(pk: string, sk: string): Promise<boolean> {
+  const result = await client.send(
+    new QueryCommand({
+      TableName: tableName(),
+      KeyConditionExpression: "pk = :pk AND sk = :sk",
+      ExpressionAttributeValues: { ":pk": pk, ":sk": sk },
+      Limit: 1,
+    }),
+  );
+  return (result.Items?.length ?? 0) > 0;
+}
+
+export async function deleteScore(animal: AnimalId, sk: string): Promise<void> {
+  const animalPk = animalPartitionKey(animal);
+  const globalPk = globalPartitionKey();
+
+  const exists = await scoreItemExists(animalPk, sk);
+  if (!exists) {
+    throw new NotFoundError("Score not found");
+  }
+
+  await client.send(
+    new DeleteCommand({
+      TableName: tableName(),
+      Key: { pk: animalPk, sk },
+    }),
+  );
+
+  await client.send(
+    new DeleteCommand({
+      TableName: tableName(),
+      Key: { pk: globalPk, sk },
+    }),
+  );
+}
+
+export async function updateScoreNickname(
+  animal: AnimalId,
+  sk: string,
+  nickname: string,
+): Promise<LeaderboardEntry> {
+  if (isBlockedNickname(nickname)) {
+    throw new ValidationError("That nickname is not allowed");
+  }
+
+  const animalPk = animalPartitionKey(animal);
+  const globalPk = globalPartitionKey();
+
+  const exists = await scoreItemExists(animalPk, sk);
+  if (!exists) {
+    throw new NotFoundError("Score not found");
+  }
+
+  const updateParams = {
+    TableName: tableName(),
+    Key: { pk: animalPk, sk },
+    UpdateExpression: "SET nickname = :nickname",
+    ExpressionAttributeValues: { ":nickname": nickname },
+    ReturnValues: "ALL_NEW" as const,
+  };
+
+  const animalResult = await client.send(new UpdateCommand(updateParams));
+
+  await client.send(
+    new UpdateCommand({
+      ...updateParams,
+      Key: { pk: globalPk, sk },
+    }),
+  );
+
+  return recordToEntry(
+    animalResult.Attributes as Parameters<typeof recordToEntry>[0],
+  );
 }

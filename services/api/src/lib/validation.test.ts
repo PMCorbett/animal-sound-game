@@ -6,6 +6,8 @@ import {
   scoreSortKey,
 } from "./scores.js";
 import {
+  parseAdminNicknameUpdate,
+  parseAdminScoreRef,
   parseLeaderboardQuery,
   parseSubmitBody,
   ValidationError,
@@ -48,6 +50,42 @@ describe("parseSubmitBody", () => {
         mode: "child",
       }),
     ).toThrow(ValidationError);
+  });
+});
+
+describe("parseAdminScoreRef", () => {
+  it("accepts valid score references", () => {
+    expect(
+      parseAdminScoreRef({
+        id: "SCORE#00000042#2026-09-12T14:30:00.000Z",
+        animal: "cow",
+      }),
+    ).toEqual({
+      id: "SCORE#00000042#2026-09-12T14:30:00.000Z",
+      animal: "cow",
+    });
+  });
+
+  it("rejects invalid ids", () => {
+    expect(() =>
+      parseAdminScoreRef({ id: "not-a-score", animal: "cow" }),
+    ).toThrow(ValidationError);
+  });
+});
+
+describe("parseAdminNicknameUpdate", () => {
+  it("validates nickname updates", () => {
+    expect(
+      parseAdminNicknameUpdate({
+        id: "SCORE#00000042#2026-09-12T14:30:00.000Z",
+        animal: "cow",
+        nickname: "NewName",
+      }),
+    ).toEqual({
+      id: "SCORE#00000042#2026-09-12T14:30:00.000Z",
+      animal: "cow",
+      nickname: "NewName",
+    });
   });
 });
 

@@ -62,6 +62,7 @@ const apiStack = new ApiStack(app, "AnimalSoundGame-ApiStack", {
     `https://${webStack.distributionDomainName}`,
     "http://localhost:5173",
   ],
+  webAdminSuccessUrl: `${webStack.customDomainUrl}/admin`,
 });
 apiStack.addStackDependency(webStack);
 
