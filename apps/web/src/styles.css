@@ -1280,7 +1280,7 @@ h2 {
 .se-epithet-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: clamp(4.5rem, 7vh, 6.5rem) clamp(5rem, 7vw, 7.5rem);
+  gap: clamp(2.25rem, 4vh, 3.5rem) clamp(5rem, 7vw, 7.5rem);
   align-items: flex-start;
   justify-content: center;
 }
