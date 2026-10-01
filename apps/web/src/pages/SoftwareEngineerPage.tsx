@@ -9,6 +9,9 @@ import slideIphone2 from "../assets/careers-display/iphone-2.png";
 import slideIphone3 from "../assets/careers-display/iphone-3.png";
 import slideIpad from "../assets/careers-display/ipad-royal-london.png";
 import slideMonitor from "../assets/careers-display/monitor-personal-site.png";
+import qrCode from "../assets/qr-code.svg";
+
+const ANIMALS_GAME_URL = "https://animals.pmcorbett.dev";
 
 const SLIDES: CareersSlide[] = [
   {
@@ -51,7 +54,21 @@ export function SoftwareEngineerPage() {
       <div className="se-display-grid">
         <div className="se-display-left">
           <CareersEpithetBubbles />
-          <CareersPortfolioSlideshow slides={SLIDES} />
+          <div className="se-slideshow-row">
+            <div className="se-qr-block">
+              <p className="se-qr-title">Play the Animal Sound Game</p>
+              <a
+                className="se-qr-link"
+                href={ANIMALS_GAME_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Play the Animal Sound Game — scan or open at animals.pmcorbett.dev"
+              >
+                <img className="se-qr-image" src={qrCode} alt="" width={343} height={343} />
+              </a>
+            </div>
+            <CareersPortfolioSlideshow slides={SLIDES} />
+          </div>
         </div>
 
         <div className="se-leaderboard-panel">
